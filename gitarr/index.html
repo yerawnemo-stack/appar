@@ -1,1 +1,492 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Interaktiv gitarrhals – skalor & grader</title>
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#111827;
+    --border:#1f2a3a;
+    --text:#e5e7eb;
+    --muted:#9aa4b2;
+    --accent:#22c55e;
+    --root:#f59e0b;
+    --fret:#1a2334;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+    color:var(--text);
+    background: radial-gradient(1600px 800px at 70% -10%, #172033 0%, var(--bg) 55%);
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px;border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#0d1424 0%, #0b111c 100%);
+    gap:12px;flex-wrap:wrap
+  }
+  header h1{margin:0;font-size:clamp(18px,2.6vw,24px);letter-spacing:.2px}
+  header .sub{color:var(--muted);font-size:12px}
+  .settings-toggle{
+    appearance:none;border:1px solid var(--border);background:#121a2a;color:var(--text);
+    padding:9px 12px;border-radius:10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer
+  }
+  .settings-toggle:hover{background:#172235}
+  .settings-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .container{display:grid;grid-template-columns: 320px minmax(0,1fr);gap:16px; padding:16px; max-width:1400px;margin:0 auto}
+  .container.settings-collapsed{grid-template-columns:minmax(0,1fr)}
+  .container.settings-collapsed .side{display:none}
+  @media (max-width: 980px){
+    .container{grid-template-columns:1fr}
+    .side{position:static}
+  }
+  /* SIDOPANEL */
+  .side{
+    background:linear-gradient(180deg,#0f1729,#0c1220);
+    border:1px solid var(--border);border-radius:14px;padding:14px;position:sticky;top:12px;height:fit-content
+  }
+  .group{margin-bottom:14px}
+  .group h3{margin:0 0 8px 0;font-size:13px;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+  .row{display:grid;gap:8px}
+  label{font-size:13px;color:var(--muted)}
+  select, input[type="number"], input[type="range"]{
+    width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);outline:none;background:#121a2a;color:var(--text)
+  }
+  .switch{display:flex;align-items:center;gap:8px}
+  .switch input{appearance:none;width:46px;height:26px;border-radius:999px;background:#223049;border:1px solid var(--border);position:relative;cursor:pointer;transition:.2s}
+  .switch input:checked{background:#285f3f}
+  .switch input::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+  .switch input:checked::after{transform:translateX(20px)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#121a20;color:var(--muted);font-size:12px;cursor:pointer}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .pill.active{outline:1px solid rgba(255,255,255,.15);background:#151f2e}
+  .muted{color:var(--muted)}
+  /* BRÄDAN */
+  .board-wrap{
+    background:linear-gradient(180deg,#0f1625,#0b111d);
+    border:1px solid var(--border);border-radius:14px;padding:12px;min-width:0
+  }
+  .board-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+  .board-scroll::-webkit-scrollbar{height:8px}
+  .board-scroll::-webkit-scrollbar-thumb{background:#26344d;border-radius:999px}
+  .board-inner{min-width:max-content}
+  .status{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:6px 4px 10px}
+  .status .info{color:var(--muted);font-size:12px}
+  .fretnums{display:grid;gap:0;grid-template-columns:64px repeat(var(--frets,13), minmax(60px,1fr))}
+  .fretnums div{font-size:12px;color:var(--muted);text-align:center;padding:6px 0;border-right:1px solid var(--border);background:#101726}
+  .fretboard{
+    display:grid;grid-auto-rows:60px;grid-template-columns:64px repeat(var(--frets,13), minmax(60px,1fr));
+    border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#0d1524;position:relative
+  }
+  .slabel{display:flex;align-items:center;justify-content:center;background:#0c1220;color:var(--muted);border-right:1px solid var(--border);font-weight:700}
+  .cell{position:relative;border-right:1px solid #22314a;border-bottom:1px solid #203049;background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.07))}
+  .inlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#2f3b55;opacity:.7}
+  .inlay.double::before,.inlay.double::after{content:"";position:absolute;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#2f3b55}
+  .inlay.double::before{left:-14px}.inlay.double::after{right:-14px}
+  .note{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+    color:#06120a;font-weight:800;box-shadow:0 6px 14px rgba(0,0,0,.35), inset 0 -3px 6px rgba(0,0,0,.25);
+    outline:1px solid rgba(255,255,255,.06);text-shadow:0 1px 0 rgba(255,255,255,.3)
+  }
+  .note small{position:absolute;bottom:-16px;font-size:11px;color:var(--muted);font-weight:700;text-shadow:none}
+  .hidden{display:none}
+  .controls-row{display:grid;grid-template-columns: repeat(2,1fr);gap:8px}
+  @media (max-width: 520px){ .controls-row{grid-template-columns:1fr} }
+  @media (max-width: 700px){
+    header{padding:10px 12px;gap:8px}
+    header h1{font-size:17px}
+    header .sub{display:none}
+    .settings-toggle{padding:8px 10px;font-size:12px}
+    .container{padding:8px;gap:8px}
+    .board-wrap{padding:8px;border-radius:10px}
+    .status{margin:2px 2px 6px;gap:4px}
+    .status .info{font-size:11px}
+    .fretnums{grid-template-columns:38px repeat(var(--frets,13), 44px)}
+    .fretboard{grid-auto-rows:46px;grid-template-columns:38px repeat(var(--frets,13), 44px)}
+    .fretnums div{font-size:10px;padding:4px 0}
+    .slabel{font-size:11px}
+    .note{width:34px;height:34px;font-size:12px;box-shadow:0 3px 8px rgba(0,0,0,.3), inset 0 -2px 4px rgba(0,0,0,.2)}
+    .note small{bottom:-12px;font-size:9px}
+    .inlay{width:7px;height:7px}
+    .inlay.double::before,.inlay.double::after{width:7px;height:7px}
+    .inlay.double::before{left:-10px}.inlay.double::after{right:-10px}
+  }
+  @media (max-width: 420px){
+    .fretnums{grid-template-columns:34px repeat(var(--frets,13), 40px)}
+    .fretboard{grid-auto-rows:42px;grid-template-columns:34px repeat(var(--frets,13), 40px)}
+    .note{width:31px;height:31px;font-size:11px}
+    .status .info:last-child{display:none}
+  }
+  .radio-row{display:flex;gap:8px;flex-wrap:wrap}
+  .radio-row label{display:flex;align-items:center;gap:6px;background:#121a2a;border:1px solid var(--border);padding:6px 10px;border-radius:10px;cursor:pointer;color:#cbd5e1}
+  .radio-row input{accent-color:#22c55e}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Interaktiv gitarrhals – skalor & tonfunktioner</h1>
+    <div class="sub">Välj tonart och skala. Tonerna på halsen färgkodas efter funktion (1, ♭3, 5, osv).</div>
+  </div>
+  <button id="settingsToggle" class="settings-toggle" type="button" aria-controls="settingsPanel" aria-expanded="true">Dölj inställningar</button>
+</header>
 
+<div id="appContainer" class="container">
+  <aside id="settingsPanel" class="side">
+    <div class="group">
+      <h3>Tonart & skala</h3>
+      <div class="row">
+        <label>Grundton
+          <select id="root"></select>
+        </label>
+        <label>Skala
+          <select id="scale"></select>
+        </label>
+        <div class="controls-row">
+          <label>Antal band
+            <input id="frets" type="number" min="5" max="24" value="15">
+          </label>
+          <label>Olyckstecken
+            <select id="acc">
+              <option value="auto">Automatiskt</option>
+              <option value="sharps">Kors (#)</option>
+              <option value="flats">B (♭)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Visning</h3>
+      <div class="row">
+        <div class="radio-row" id="labelMode">
+          <label><input type="radio" name="lab" value="degree" checked> Visa grader</label>
+          <label><input type="radio" name="lab" value="note"> Visa notnamn</label>
+          <label><input type="radio" name="lab" value="both"> Båda</label>
+        </div>
+        <label class="switch">
+          <input id="showOpen" type="checkbox" checked>
+          <span>Visa öppna strängar (band 0)</span>
+        </label>
+        <label class="switch">
+          <input id="hideNonScale" type="checkbox" checked>
+          <span>Dölj toner utanför skalan</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Färglegend (klickbar filtrering)</h3>
+      <div id="legend" class="legend"></div>
+      <div class="muted" style="margin-top:6px;font-size:12px">Klicka på en etikett för att isolera den graden. Klicka igen för att återställa.</div>
+    </div>
+  </aside>
+
+  <main class="board-wrap">
+    <div class="status">
+      <div class="info" id="statusText"></div>
+      <div class="info">Stämning: <strong>E A D G B E</strong> (låga→höga)</div>
+    </div>
+    <div class="board-scroll" id="boardScroll">
+      <div class="board-inner">
+        <div id="fnums" class="fretnums"></div>
+        <div id="board" class="fretboard"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  // ======= DATA =======
+  const SHARPS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const FLATS  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+  const TUNING = ["E","A","D","G","B","E"]; // 6 -> 1
+  const PC = {C:0,"C#":1,Db:1,D:2,"D#":3,Eb:3,E:4,F:5,"F#":6,Gb:6,G:7,"G#":8,Ab:8,A:9,"A#":10,Bb:10,B:11};
+  const OPEN_PC = { E:4, A:9, D:2, G:7, B:11 };
+  const mod = (n,m)=>((n%m)+m)%m;
+
+  // Scale definitions: intervals + degree labels (relative to root)
+  const SCALES = [
+    { id:"major", name:"Dur (Jonisk)", iv:[0,2,4,5,7,9,11], dg:["1","2","3","4","5","6","7"] },
+    { id:"natminor", name:"Naturlig moll (Aeolisk)", iv:[0,2,3,5,7,8,10], dg:["1","2","♭3","4","5","♭6","♭7"] },
+    { id:"harmminor", name:"Harmonisk moll", iv:[0,2,3,5,7,8,11], dg:["1","2","♭3","4","5","♭6","7"] },
+    { id:"melminor", name:"Melodisk moll (uppåt)", iv:[0,2,3,5,7,9,11], dg:["1","2","♭3","4","5","6","7"] },
+    { id:"dorian", name:"Dorian", iv:[0,2,3,5,7,9,10], dg:["1","2","♭3","4","5","6","♭7"] },
+    { id:"phrygian", name:"Frygisk", iv:[0,1,3,5,7,8,10], dg:["1","♭2","♭3","4","5","♭6","♭7"] },
+    { id:"lydian", name:"Lydisk", iv:[0,2,4,6,7,9,11], dg:["1","2","3","♯4","5","6","7"] },
+    { id:"mixolyd", name:"Mixolydisk", iv:[0,2,4,5,7,9,10], dg:["1","2","3","4","5","6","♭7"] },
+    { id:"locrian", name:"Lokrisk", iv:[0,1,3,5,6,8,10], dg:["1","♭2","♭3","4","♭5","♭6","♭7"] },
+    { id:"minorpent", name:"Pentatonisk moll", iv:[0,3,5,7,10], dg:["1","♭3","4","5","♭7"] },
+    { id:"majorpent", name:"Pentatonisk dur", iv:[0,2,4,7,9], dg:["1","2","3","5","6"] },
+    { id:"blues", name:"Blues (moll)", iv:[0,3,5,6,7,10], dg:["1","♭3","4","♭5","5","♭7"] }
+  ];
+
+  // Colors for degree labels (consistent across scales)
+  const DEGREE_COLORS = {
+    "1":"#f59e0b", // root
+    "♭2":"#ef4444","2":"#22c55e","♯2":"#16a34a",
+    "♭3":"#06b6d4","3":"#0ea5e9",
+    "4":"#a78bfa","♯4":"#8b5cf6","♭5":"#7c3aed",
+    "5":"#60a5fa","♯5":"#38bdf8",
+    "♭6":"#f97316","6":"#fb923c","♯6":"#fdba74",
+    "♭7":"#e879f9","7":"#d946ef"
+  };
+
+  // ======= STATE =======
+  const elRoot = document.getElementById("root");
+  const elScale = document.getElementById("scale");
+  const elAcc = document.getElementById("acc");
+  const elFrets = document.getElementById("frets");
+  const elShowOpen = document.getElementById("showOpen");
+  const elHideNon = document.getElementById("hideNonScale");
+  const elLegend = document.getElementById("legend");
+  const elBoard = document.getElementById("board");
+  const elFnums = document.getElementById("fnums");
+  const elStatus = document.getElementById("statusText");
+  const labelModeWrap = document.getElementById("labelMode");
+  const appContainer = document.getElementById("appContainer");
+  const settingsToggle = document.getElementById("settingsToggle");
+
+  const state = {
+    root:"A",
+    scale:"natminor",
+    frets:15,
+    acc:"auto",
+    showOpen:true,
+    hideNon:true,
+    labelMode:"degree",
+    isolate:null // degree label to isolate, or null
+  };
+
+  // ======= HELPERS =======
+  const pcOf = (name)=>PC[name] ?? 0;
+
+  // Automatisk stavning utifrån skalgrad i stället för en grov #/b-heuristik.
+  // Exempel: G-dur => F#, F-dur => Bb, Db-dur => Gb.
+  const LETTERS = ["C","D","E","F","G","A","B"];
+  const NATURAL_PC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+
+  function spellDegree(rootName, degree, targetPc){
+    const rootLetter = rootName[0];
+    const degreeNum = parseInt(String(degree).match(/\d+/)?.[0] || "1", 10);
+    const rootIndex = LETTERS.indexOf(rootLetter);
+    const letter = LETTERS[mod(rootIndex + degreeNum - 1, 7)];
+    const naturalPc = NATURAL_PC[letter];
+
+    let diff = mod(targetPc - naturalPc, 12);
+    if(diff > 6) diff -= 12;
+
+    const accidental = diff === 0 ? ""
+      : diff === 1 ? "#"
+      : diff === 2 ? "##"
+      : diff === -1 ? "b"
+      : diff === -2 ? "bb"
+      : "";
+
+    return letter + accidental;
+  }
+
+  const nameOf = (pc, accMode, rootName, degree=null)=>{
+    if(accMode==="sharps") return SHARPS[pc];
+    if(accMode==="flats") return FLATS[pc];
+    if(degree) return spellDegree(rootName, degree, pc);
+
+    // För kromatiska toner utanför skalan finns ingen skalgrad att stava efter.
+    return rootName.includes("b") ? FLATS[pc] : SHARPS[pc];
+  };
+
+  function buildRootOptions(){
+    const opts = ["C","C#","Db","D","D#","Eb","E","F","F#","Gb","G","G#","Ab","A","A#","Bb","B"];
+    opts.forEach(n=>{
+      const o = document.createElement("option");
+      o.value = n; o.textContent = n;
+      elRoot.appendChild(o);
+    });
+    elRoot.value = state.root;
+  }
+  function buildScaleOptions(){
+    SCALES.forEach(s=>{
+      const o = document.createElement("option");
+      o.value = s.id; o.textContent = s.name;
+      elScale.appendChild(o);
+    });
+    elScale.value = state.scale;
+  }
+
+  function degreeBySemitone(scaleDef, rel){
+    const i = scaleDef.iv.indexOf(rel);
+    return i>=0 ? scaleDef.dg[i] : null;
+  }
+
+  function renderLegend(scaleDef){
+    elLegend.innerHTML = "";
+    scaleDef.dg.forEach(d=>{
+      const pill = document.createElement("div");
+      pill.className = "pill" + (state.isolate===d ? " active":"");
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = DEGREE_COLORS[d] || "#94a3b8";
+      pill.appendChild(dot);
+      const txt = document.createTextNode(" " + d);
+      pill.appendChild(txt);
+      pill.addEventListener("click", ()=>{
+        state.isolate = (state.isolate===d) ? null : d;
+        render();
+      });
+      elLegend.appendChild(pill);
+    });
+  }
+
+  function renderFretNumbers(){
+    elFnums.style.setProperty("--frets", state.frets + 1);
+    elFnums.innerHTML = "";
+    elFnums.style.gridTemplateColumns = `64px repeat(${state.showOpen ? state.frets+1 : state.frets}, minmax(60px,1fr))`;
+    const dummy = document.createElement("div"); dummy.textContent = ""; elFnums.appendChild(dummy);
+    const start = state.showOpen ? 0 : 1;
+    for(let f=start; f<=state.frets; f++){
+      const d = document.createElement("div");
+      d.textContent = f;
+      elFnums.appendChild(d);
+    }
+  }
+
+  function renderBoard(){
+    const fretCols = state.showOpen ? state.frets + 1 : state.frets;
+    elBoard.style.setProperty("--frets", fretCols);
+    elBoard.innerHTML = "";
+    const scaleDef = SCALES.find(s=>s.id===state.scale);
+    const rootPc = pcOf(state.root);
+    const showStart = state.showOpen ? 0 : 1;
+
+    // rows: 6 strings
+    for(let s=0; s<TUNING.length; s++){
+      // string label
+      const lab = document.createElement("div");
+      lab.className = "slabel";
+      lab.textContent = TUNING[s];
+      elBoard.appendChild(lab);
+
+      for(let f=showStart; f<=state.frets; f++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        // inlays
+        if([3,5,7,9,15,17,19,21].includes(f)){
+          const inl = document.createElement("div"); inl.className="inlay"; cell.appendChild(inl);
+        }
+        if([12,24].includes(f)){
+          const inl = document.createElement("div"); inl.className="inlay double"; cell.appendChild(inl);
+        }
+
+        const open = OPEN_PC[TUNING[s]];
+        const pc = mod(open + f, 12);
+        const rel = mod(pc - rootPc, 12);
+        const degree = degreeBySemitone(scaleDef, rel);
+
+        const isInScale = degree !== null;
+        if(!isInScale && state.hideNon){
+          // keep empty
+        }else{
+          const bubble = document.createElement("div");
+          bubble.className = "note";
+          let labelTop = "";
+          let sub = "";
+
+          if(isInScale){
+            const color = DEGREE_COLORS[degree] || "#94a3b8";
+            bubble.style.background = `radial-gradient(circle at 30% 25%, #fff, ${color} 65%)`;
+            bubble.style.color = (degree==="1") ? "#281000" : "#06121a";
+            // legend isolate handling
+            if(state.isolate && state.isolate !== degree){
+              bubble.style.opacity = .25;
+              bubble.style.filter = "grayscale(0.6)";
+            }
+            labelTop = degree;
+            sub = nameOf(pc, state.acc, state.root, degree);
+          }else{
+            bubble.style.background = `radial-gradient(circle at 30% 25%, #e5e7eb, #9aa4b2 65%)`;
+            bubble.style.color = "#0b0f14";
+            labelTop = state.labelMode==="note" ? nameOf(pc, state.acc, state.root, degree) : "·";
+            sub = state.labelMode==="degree" ? "" : "";
+            if(state.isolate){ bubble.style.opacity = .15; bubble.style.filter="grayscale(1)" }
+          }
+
+          // label mode
+          if(state.labelMode==="note" && isInScale){
+            labelTop = nameOf(pc, state.acc, state.root, degree);
+            sub = degree;
+          } else if(state.labelMode==="both" && isInScale){
+            labelTop = degree;
+            sub = nameOf(pc, state.acc, state.root, degree);
+          }
+
+          const span = document.createElement("span");
+          span.textContent = labelTop;
+          bubble.appendChild(span);
+
+          if(sub){
+            const small = document.createElement("small");
+            small.textContent = sub;
+            bubble.appendChild(small);
+          }
+
+          cell.appendChild(bubble);
+        }
+
+        elBoard.appendChild(cell);
+      }
+    }
+  }
+
+  function renderStatus(){
+    const sc = SCALES.find(s=>s.id===state.scale);
+    elStatus.textContent = `${state.root} ${sc.name} – intervall: ${sc.dg.join("  ")}`;
+  }
+
+  function render(){
+    renderLegend(SCALES.find(s=>s.id===state.scale));
+    renderFretNumbers();
+    renderBoard();
+    renderStatus();
+  }
+
+  function setSettingsCollapsed(collapsed){
+    appContainer.classList.toggle("settings-collapsed", collapsed);
+    settingsToggle.setAttribute("aria-expanded", String(!collapsed));
+    settingsToggle.textContent = collapsed ? "Visa inställningar" : "Dölj inställningar";
+  }
+
+  // ======= INIT =======
+  buildRootOptions();
+  buildScaleOptions();
+  setSettingsCollapsed(window.matchMedia("(max-width: 980px)").matches);
+  render();
+
+  // ======= EVENTS =======
+  settingsToggle.addEventListener("click", ()=>{
+    setSettingsCollapsed(!appContainer.classList.contains("settings-collapsed"));
+  });
+  elRoot.addEventListener("change", e=>{ state.root = e.target.value; render(); });
+  elScale.addEventListener("change", e=>{ state.scale = e.target.value; state.isolate=null; render(); });
+  elAcc.addEventListener("change", e=>{ state.acc = e.target.value; render(); });
+  elFrets.addEventListener("change", e=>{
+    const v = Math.max(5, Math.min(24, parseInt(e.target.value||"15",10)));
+    state.frets = v; e.target.value = String(v); render();
+  });
+  elShowOpen.addEventListener("change", e=>{ state.showOpen = e.target.checked; render(); });
+  elHideNon.addEventListener("change", e=>{ state.hideNon = e.target.checked; render(); });
+
+  labelModeWrap.addEventListener("change", e=>{
+    if(e.target.name==="lab"){ state.labelMode = e.target.value; render(); }
+  });
+})();
+</script>
+</body>
+</html>
