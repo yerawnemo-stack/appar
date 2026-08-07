@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pappas sommarskola – Mattemästaren</title>
+<style>
+  :root{
+    --bg:#f7f4ec; --card:#ffffff; --ink:#183044; --muted:#637381;
+    --blue:#176b87; --blue2:#0f5268; --gold:#f2b84b; --green:#2f9e6f;
+    --red:#cf4f4f; --line:#d8e1e7; --shadow:0 14px 35px rgba(19,53,72,.13);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--ink); background:
+      radial-gradient(circle at 15% 10%, rgba(242,184,75,.16), transparent 25%),
+      radial-gradient(circle at 85% 15%, rgba(23,107,135,.12), transparent 30%),
+      var(--bg);
+    min-height:100vh;
+  }
+  button,input{font:inherit}
+  .shell{max-width:980px;margin:auto;padding:24px}
+  .hero{
+    background:linear-gradient(135deg,var(--blue),var(--blue2));
+    color:white;border-radius:26px;padding:26px 28px;box-shadow:var(--shadow);
+    display:flex;gap:20px;align-items:center;justify-content:space-between
+  }
+  .hero h1{margin:0 0 6px;font-size:clamp(1.8rem,4vw,3rem)}
+  .hero p{margin:0;opacity:.92}
+  .crest{font-size:3.8rem;filter:drop-shadow(0 5px 10px rgba(0,0,0,.18))}
+  .panel{background:var(--card);border-radius:24px;padding:24px;box-shadow:var(--shadow);margin-top:22px}
+  .hidden{display:none!important}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .mode{
+    border:2px solid var(--line);border-radius:18px;padding:18px;background:#fff;
+    cursor:pointer;text-align:left;transition:.18s
+  }
+  .mode:hover{transform:translateY(-2px);border-color:var(--blue)}
+  .mode strong{display:block;font-size:1.12rem;margin-bottom:5px}
+  .muted{color:var(--muted)}
+  .topbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;margin-bottom:18px}
+  .progress{height:14px;background:#e8eef1;border-radius:99px;overflow:hidden}
+  .progress > div{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#f28f3b);transition:.3s}
+  .statsline{display:flex;gap:12px;flex-wrap:wrap;font-weight:700}
+  .chip{background:#eef5f7;border-radius:99px;padding:7px 11px}
+  .question-card{border:2px solid var(--line);border-radius:22px;padding:24px}
+  .lesson-tag{display:inline-flex;gap:7px;align-items:center;background:#eef5f7;color:var(--blue2);border-radius:99px;padding:7px 11px;font-weight:800;font-size:.9rem}
+  .question{font-size:clamp(1.25rem,2.8vw,1.8rem);line-height:1.35;margin:18px 0}
+  .answer-grid{display:grid;gap:12px}
+  .option{
+    width:100%;border:2px solid var(--line);background:#fff;border-radius:14px;padding:14px 16px;
+    text-align:left;cursor:pointer;font-weight:700
+  }
+  .option:hover{border-color:var(--blue);background:#f7fbfc}
+  .option.selected{border-color:var(--blue);background:#eaf5f8}
+  .answer-input{
+    width:100%;border:2px solid var(--line);border-radius:14px;padding:14px 16px;font-size:1.2rem;
+  }
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .btn{border:0;border-radius:14px;padding:12px 17px;font-weight:800;cursor:pointer}
+  .primary{background:var(--blue);color:#fff}
+  .primary:hover{background:var(--blue2)}
+  .secondary{background:#edf2f4;color:var(--ink)}
+  .feedback{margin-top:16px;border-radius:16px;padding:15px 17px;font-weight:700}
+  .correct{background:#e7f6ef;color:#176a49}
+  .wrong{background:#fdecec;color:#8b2f2f}
+  .helpbox{margin-top:14px;background:#fff8e8;border:1px solid #f0d28c;border-radius:16px;padding:16px}
+  .milestone{
+    position:fixed;inset:0;background:rgba(7,29,41,.65);display:flex;align-items:center;justify-content:center;
+    padding:20px;z-index:5
+  }
+  .milestone-card{background:white;border-radius:24px;padding:30px;max-width:460px;text-align:center;box-shadow:var(--shadow)}
+  .badge{font-size:4.5rem}
+  .topic-row{display:grid;grid-template-columns:150px 1fr 55px;gap:10px;align-items:center;margin:9px 0}
+  .mini-bar{height:10px;background:#e8eef1;border-radius:99px;overflow:hidden}
+  .mini-bar div{height:100%;background:var(--green)}
+  .result-big{font-size:3.2rem;font-weight:900;margin:8px 0}
+  .pass{color:var(--green)} .fail{color:var(--red)}
+  .footer-note{text-align:center;color:var(--muted);font-size:.9rem;margin:22px 0}
+  @media(max-width:620px){
+    .shell{padding:12px}.hero{padding:20px}.crest{font-size:2.8rem}
+    .panel{padding:16px}.question-card{padding:18px}.topic-row{grid-template-columns:105px 1fr 46px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="hero">
+    <div>
+      <h1>Pappas sommarskola</h1>
+      <p>Mattemästaren – repetition inför årskurs 7 · beta 1.2</p>
+    </div>
+    <div class="crest">🌻📐</div>
+  </header>
+
+  <section id="start" class="panel">
+    <h2>Välj uppdrag</h2>
+    <p class="muted">Frågorna skapas på nytt varje gång och blandas mellan de 20 lektionerna.</p>
+    <div class="grid">
+      <button class="mode" data-count="10">
+        <strong>⚡ Snabbträning</strong>
+        10 blandade frågor. Bra för en kort repetition.
+      </button>
+      <button class="mode" data-count="30">
+        <strong>🎯 Träningspass</strong>
+        30 frågor med delresultat efter varje tiotal.
+      </button>
+      <button class="mode" data-count="100">
+        <strong>👑 Mattemästarprovet</strong>
+        100 frågor. Minst 91 rätt krävs för att bli godkänd.
+      </button>
+    </div>
+    <div id="savedInfo" class="helpbox hidden"></div>
+  </section>
+
+  <section id="quiz" class="panel hidden">
+    <div class="topbar">
+      <div>
+        <div class="progress"><div id="progressFill"></div></div>
+      </div>
+      <div class="statsline">
+        <span class="chip" id="qCounter">1 / 10</span>
+        <span class="chip" id="scoreChip">Rätt: 0</span>
+        <span class="chip" id="streakChip">🔥 0</span>
+      </div>
+    </div>
+
+    <div class="question-card">
+      <span class="lesson-tag" id="lessonTag">Dag 1</span>
+      <div class="question" id="questionText"></div>
+      <div id="answerArea"></div>
+      <div class="actions">
+        <button id="checkBtn" class="btn primary">Kontrollera</button>
+        <button id="helpBtn" class="btn secondary">📖 Behöver hjälp</button>
+      </div>
+      <div id="feedback" class="feedback hidden"></div>
+      <div id="helpBox" class="helpbox hidden"></div>
+    </div>
+  </section>
+
+  <section id="result" class="panel hidden">
+    <h2 id="resultTitle"></h2>
+    <div id="resultScore" class="result-big"></div>
+    <p id="resultText"></p>
+    <h3>Resultat per område</h3>
+    <div id="topicStats"></div>
+    <div class="actions">
+      <button id="againBtn" class="btn primary">Spela igen</button>
+      <button id="homeBtn" class="btn secondary">Till startsidan</button>
+    </div>
+  </section>
+
+  <div class="footer-note">Allt sparas lokalt i webbläsaren och fungerar offline.</div>
+</div>
+
+<div id="milestone" class="milestone hidden">
+  <div class="milestone-card">
+    <div class="badge" id="mileBadge">🏅</div>
+    <h2 id="mileTitle">10 frågor klara!</h2>
+    <p id="mileText"></p>
+    <button id="mileBtn" class="btn primary">Fortsätt</button>
+  </div>
+</div>
+
+<script>
+const theory = {
+1:"Positionssystem och decimaltal: jämför en position i taget från vänster. Tiondelar, hundradelar och tusendelar ligger efter kommatecknet.",
+2:"De fyra räknesätten med decimaltal: sätt kommatecknen under varandra vid addition och subtraktion. Vid multiplikation räknar du decimalerna i faktorerna.",
+3:"Negativa tal: på tallinjen är tal längre åt vänster mindre. En temperaturökning adderas, även när startvärdet är negativt.",
+4:"Avrundning: 0–4 avrundas nedåt och 5–9 uppåt. Överslagsräkning ger ett snabbt ungefärligt svar.",
+5:"Prioriteringsregler: parenteser först, sedan multiplikation och division, sist addition och subtraktion.",
+6:"Bråkform och blandad form: täljaren är uppe och nämnaren nere. Blandad form innehåller både heltal och bråk.",
+7:"Bråkberäkningar: för en del av ett antal delar du först med nämnaren och multiplicerar sedan med täljaren. Vid samma nämnare räknar du bara täljarna.",
+8:"Bråk, decimal och procent kan beskriva samma värde. Exempel: 1/2 = 0,5 = 50 % och 1/4 = 0,25 = 25 %.",
+9:"Procent av något: hitta ofta 10 % genom att dela med 10, eller 1 % genom att dela med 100.",
+10:"Proportionalitet: två storheter ökar eller minskar i samma takt. Hitta gärna priset eller mängden per enhet först.",
+11:"Geometriska objekt: rektangel, kvadrat och triangel är tvådimensionella. Kub och rätblock är tredimensionella.",
+12:"Omkrets är sträckan runt figuren. Area rektangel = bas × höjd. Area triangel = bas × höjd ÷ 2.",
+13:"Vinklar: spetsig < 90°, rät = 90°, trubbig mellan 90° och 180°. Triangelns vinkelsumma är 180°.",
+14:"Skala 1:100 betyder att 1 cm på bilden motsvarar 100 cm i verkligheten. Skala 3:1 är en förstoring.",
+15:"Tabeller och diagram: staplar jämför grupper, linjediagram visar förändring över tid och cirkeldiagram visar delar av en helhet.",
+16:"Lägesmått: medelvärde = summa ÷ antal. Medianen är mitten efter sortering. Typvärdet förekommer flest gånger.",
+17:"Talföljder följer en regel. Jämför skillnaden mellan två tal för att hitta hur mönstret förändras.",
+18:"En variabel är en bokstav vars värde kan ändras. Ett algebraiskt uttryck saknar likhetstecken, till exempel 3x eller x + 5.",
+19:"En ekvation är som en balansvåg. Vänster och höger sida ska vara lika mycket värda.",
+20:"Vid problemlösning: skriv vad du vet, rita gärna en bild och testa om svaret är rimligt."
+};
+
+const topics = {
+1:"Taluppfattning",2:"Decimaltal",3:"Negativa tal",4:"Avrundning",5:"Prioritering",
+6:"Bråk",7:"Bråk",8:"Bråk & procent",9:"Procent",10:"Proportionalitet",
+11:"Geometri",12:"Area & omkrets",13:"Vinklar",14:"Skala",15:"Diagram",
+16:"Statistik",17:"Mönster",18:"Algebra",19:"Ekvationer",20:"Problemlösning"
+};
+
+const rint=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[rint(0,a.length-1)];
+const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+const sv=n=>String(Number(Number(n).toFixed(6))).replace(".",",");
+const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+const frac=(a,b)=>{const g=gcd(a,b);return `${a/g}/${b/g}`};
+
+function mcq(lesson,q,correct,wrong,explain){
+  const answer=String(correct);
+  const uniqueWrong=[...new Set(wrong.map(String))].filter(v=>v!==answer);
+  const opts=shuffle([answer,...uniqueWrong]);
+  return {lesson,type:"mcq",q,answer,options:opts,explain};
+}
+function inputQ(lesson,q,answer,explain,aliases=[]){
+  return {lesson,type:"input",q,answer:String(answer),aliases:aliases.map(String),explain};
+}
+
+function makeQuestion(lesson){
+  let a,b,c,d,n,den,num,total,pct,base,h,ans,arr,x;
+  switch(lesson){
+    case 1:
+      if(Math.random()<.5){
+        a=rint(1,9); b=rint(0,9); c=rint(0,9);
+        let val=Number(`${a}.${b}${c}`);
+        return inputQ(1,`Vilket värde har siffran ${b} i talet ${sv(val)}? Svara med ett ord.`,`tiondelar`,
+          `Siffran står direkt efter kommatecknet och visar tiondelar.`,["tiondel","en tiondel"]);
+      }
+      a=rint(1,9)/10+rint(0,9)/100;
+      b=a+(rint(1,8)/1000);
+      return mcq(1,`Vilket tal är störst av ${sv(a)} och ${sv(b)}?`,sv(Math.max(a,b)),[sv(Math.min(a,b))],
+        `Jämför tiondelar, sedan hundradelar och därefter tusendelar.`);
+    case 2:
+      if(Math.random()<.5){
+        a=rint(12,89)/10; b=rint(11,79)/100; ans=a+b;
+        return inputQ(2,`Räkna ut: ${sv(a)} + ${sv(b)}`,sv(ans),`Sätt kommatecknen rakt under varandra.`);
+      }
+      a=rint(2,9)/10; b=rint(2,9)/10; ans=a*b;
+      return inputQ(2,`Räkna ut: ${sv(a)} × ${sv(b)}`,sv(ans),`Räkna först utan kommatecken och placera sedan ut totalt två decimaler.`);
+    case 3:
+      a=-rint(2,12); b=rint(1,9); ans=a+b;
+      return inputQ(3,`Temperaturen är ${a} °C och stiger med ${b} grader. Vad blir temperaturen?`,ans,
+        `En temperaturökning betyder att du adderar ${b}.`);
+    case 4:
+      if(Math.random()<.5){
+        a=rint(10,99)+rint(0,99)/100;
+        ans=Math.round(a);
+        return inputQ(4,`Avrunda ${sv(a)} till närmaste heltal.`,ans,`Titta på tiondelen: 0–4 nedåt, 5–9 uppåt.`);
+      }
+      a=rint(21,98); b=rint(21,98); ans=Math.round(a/10)*10+Math.round(b/10)*10;
+      return inputQ(4,`Gör ett överslag genom att avrunda till tiotal: ${a} + ${b} ≈ ?`,ans,
+        `Avrunda båda talen till närmaste tiotal och addera.`);
+    case 5:
+      a=rint(2,9); b=rint(2,9); c=rint(2,9); ans=a+b*c;
+      return inputQ(5,`Räkna ut enligt prioriteringsreglerna: ${a} + ${b} × ${c}`,ans,
+        `Multiplikationen ska göras före additionen.`);
+    case 6:
+      den=pick([2,3,4,5,6,8]); num=rint(1,den-1);
+      if(Math.random()<.5){
+        const correct=`${num}/${den}`;
+        const smaller=[];
+        if(num>1) smaller.push(`${num-1}/${den}`);
+        smaller.push(`${num}/${den+1}`);
+        return mcq(6,`Vilket bråk är störst?`,correct,smaller,
+          `Vid samma nämnare är större täljare störst. Vid samma täljare är mindre nämnare störst.`);
+      }
+      n=rint(1,4); return inputQ(6,`Skriv ${n} ${num}/${den} i ren bråkform.`,`${n*den+num}/${den}`,
+        `Multiplicera heltalet med nämnaren och lägg till täljaren.`);
+    case 7:
+      den=pick([3,4,5,6,8,10]); num=rint(1,den-1); total=den*rint(2,8); ans=total/den*num;
+      return inputQ(7,`Hur mycket är ${num}/${den} av ${total}?`,ans,
+        `Dela ${total} med ${den} och multiplicera sedan med ${num}.`);
+    case 8:
+      ({n,den,pct}=pick([{n:1,den:2,pct:50},{n:1,den:4,pct:25},{n:3,den:4,pct:75},{n:1,den:5,pct:20},{n:1,den:10,pct:10}]));
+      if(Math.random()<.5) return inputQ(8,`Hur många procent är ${n}/${den}?`,`${pct}%`,
+        `Skriv bråket som hundradelar eller använd en känd “kompis”.`,[pct]);
+      return inputQ(8,`Skriv ${pct}% i decimalform.`,sv(pct/100),
+        `Procent betyder hundradelar. Dela med 100.`);
+    case 9:
+      pct=pick([10,20,25,50]); total=pick([80,120,160,200,240,300,400,500,800]); ans=total*pct/100;
+      return inputQ(9,`Hur mycket är ${pct}% av ${total} kr?`,ans,
+        `Hitta gärna 10% först och bygg vidare därifrån.`);
+    case 10:
+      a=rint(2,6); b=rint(8,30); c=rint(2,7); ans=b*c;
+      return inputQ(10,`${a} kg frukt kostar ${a*b} kr. Vad kostar ${c} kg om priset är proportionellt?`,ans,
+        `Först: ${a*b} ÷ ${a} = ${b} kr per kg. Sedan gånger ${c}.`);
+    case 11:
+      return pick([
+        mcq(11,"Vilken figur har tre hörn?","triangel",["rektangel","kub","cirkel"],"En triangel har tre sidor och tre hörn."),
+        mcq(11,"Vilken kropp har sex lika stora kvadratiska sidoytor?","kub",["rätblock","triangel","cirkel"],"En kub är tredimensionell och alla sidoytor är lika stora kvadrater."),
+        mcq(11,"Hur många hörn har ett rätblock?","8",["4","6","12"],"Ett rätblock har åtta hörn.")
+      ]);
+    case 12:
+      base=rint(3,12); h=rint(2,10);
+      if(Math.random()<.5) return inputQ(12,`En rektangel har basen ${base} cm och höjden ${h} cm. Hur stor är arean?`,base*h,
+        `Area rektangel = bas × höjd.`,[`${base*h} cm2`,`${base*h} cm²`]);
+      ans=base*h/2;
+      return inputQ(12,`En triangel har basen ${base} cm och höjden ${h} cm. Hur stor är arean?`,sv(ans),
+        `Area triangel = bas × höjd ÷ 2.`,[`${sv(ans)} cm2`,`${sv(ans)} cm²`]);
+    case 13:
+      if(Math.random()<.5){
+        a=pick([30,45,60,90,110,120,150]); ans=a===90?"rät":a<90?"spetsig":"trubbig";
+        return mcq(13,`Vilken typ av vinkel är ${a}°?`,ans,["spetsig","rät","trubbig"].filter(v=>v!==ans),
+          `Spetsig är mindre än 90°, rät är exakt 90° och trubbig är större än 90°.`);
+      }
+      a=rint(30,80); b=rint(30,140-a); ans=180-a-b;
+      return inputQ(13,`Två vinklar i en triangel är ${a}° och ${b}°. Hur stor är den tredje?`,ans,
+        `Triangelns vinkelsumma är 180°.`,[`${ans}°`]);
+    case 14:
+      n=pick([10,20,50,100,200]); a=rint(2,9); ans=a*n;
+      return inputQ(14,`På en ritning i skala 1:${n} är en sträcka ${a} cm. Hur många centimeter är den i verkligheten?`,ans,
+        `Multiplicera ritningens längd med skalans högra tal.`);
+    case 15:
+      arr=shuffle([rint(2,4),rint(5,6),rint(7,8),9]);
+      let max=Math.max(...arr), idx=arr.indexOf(max);
+      return mcq(15,`En tabell visar ${["mån","tis","ons","tors"].map((x,i)=>`${x}: ${arr[i]}`).join(", ")}. Vilken dag har högst värde?`,
+        ["måndag","tisdag","onsdag","torsdag"][idx],
+        ["måndag","tisdag","onsdag","torsdag"].filter((_,i)=>i!==idx),
+        `Jämför värdena och välj det största.`);
+    case 16:
+      arr=[rint(2,9),rint(2,9),rint(2,9),rint(2,9)];
+      if(Math.random()<.5){
+        ans=arr.reduce((s,v)=>s+v,0)/arr.length;
+        return inputQ(16,`Bestäm medelvärdet av talen: ${arr.join(", ")}`,sv(ans),
+          `Plussa ihop alla fyra talen och dela med 4.`);
+      }
+      arr.sort((a,b)=>a-b); ans=(arr[1]+arr[2])/2;
+      return inputQ(16,`Bestäm medianen av talen: ${shuffle(arr).join(", ")}`,sv(ans),
+        `Sortera talen. När antalet är jämnt tar du medelvärdet av de två mittersta.`);
+    case 17:
+      a=rint(1,10); d=rint(2,8); arr=[a,a+d,a+2*d,a+3*d]; ans=a+4*d;
+      return inputQ(17,`Vilket tal kommer härnäst? ${arr.join(", ")}, ___`,ans,
+        `Skillnaden mellan två tal är hela tiden ${d}.`);
+    case 18:
+      if(Math.random()<.5){
+        a=rint(2,5); return inputQ(18,`Förenkla: ${Array(a).fill("x").join(" + ")}`,`${a}x`,
+          `När samma variabel adderas flera gånger kan den skrivas med en koefficient.`);
+      }
+      x=rint(2,9); a=rint(2,12); ans=a+x;
+      return inputQ(18,`Beräkna värdet av uttrycket ${a} + x när x = ${x}.`,ans,
+        `Byt ut x mot ${x} och räkna.`);
+    case 19:
+      a=rint(2,12); b=rint(10,25); ans=b-a;
+      return inputQ(19,`Lös ekvationen: x + ${a} = ${b}`,ans,
+        `Tänk vilket tal som tillsammans med ${a} blir ${b}.`);
+    case 20:
+      a=rint(2,10); b=rint(2,10); c=rint(1,5); ans=-a+b-c;
+      return inputQ(20,`Mixuppgift: -${a} + ${b} - ${c} = ?`,ans,
+        `Räkna från vänster till höger och håll reda på tecknen.`);
+  }
+}
+
+// Kompletterande frågebank. Varje dag får fler sätt att pröva samma centrala idé:
+// jämförelse, baklängesproblem, vardagssituationer och begreppskontroll.
+function makeVariedQuestion(lesson){
+  const original=()=>makeQuestion(lesson);
+  const variants={
+    1:[
+      ()=>{const vals=shuffle([rint(1,8)/10,rint(1,8)/100,rint(1,8)/1000]); const sorted=[...vals].sort((x,y)=>x-y); return inputQ(1,`Skriv talen i storleksordning, minst först: ${vals.map(sv).join("; ")}`,sorted.map(sv).join("; "),"Jämför först tiondelar, sedan hundradelar och tusendelar.",[sorted.map(sv).join(",")]);},
+      ()=>{const thousands=rint(1,9),hundreds=rint(0,9),tens=rint(0,9),ones=rint(0,9),tenths=rint(0,9); const value=thousands*1000+hundreds*100+tens*10+ones+tenths/10; return inputQ(1,`Skriv som ett tal: ${thousands} tusental, ${hundreds} hundratal, ${tens} tiotal, ${ones} ental och ${tenths} tiondelar.`,sv(value),"Varje siffra placeras på sin bestämda position.");}
+    ],
+    2:[
+      ()=>{const price=rint(10,40)+rint(0,9)/10, paid=Math.ceil(price/10)*10, change=paid-price; return inputQ(2,`En vara kostar ${sv(price)} kr. Du betalar ${paid} kr. Hur mycket får du tillbaka?`,sv(change),`Beräkna ${paid} − ${sv(price)}.`,[`${sv(change)} kr`]);},
+      ()=>{const divisor=pick([2,4,5]), quotient=rint(11,39)/10, dividend=divisor*quotient; return inputQ(2,`Räkna ut: ${sv(dividend)} ÷ ${divisor}`,sv(quotient),"Dela först heltalsdelen och fortsätt genom kommatecknet.");}
+    ],
+    3:[
+      ()=>{const start=rint(1,8), drop=rint(start+1,start+10), end=start-drop; return inputQ(3,`På morgonen är det +${start} °C. Temperaturen sjunker ${drop} grader. Vad blir temperaturen?`,end,"En sänkning flyttar talet åt vänster på tallinjen.",[`${end}°C`]);},
+      ()=>{const x=-rint(2,12),y=-rint(2,12),correct=Math.max(x,y); return mcq(3,`Vilket tal är störst: ${x} eller ${y}?`,correct,[Math.min(x,y)],"Av två negativa tal är det som ligger närmast noll störst.");}
+    ],
+    4:[
+      ()=>{const a=rint(120,949); return inputQ(4,`Avrunda ${a} till närmaste hundratal.`,Math.round(a/100)*100,"Titta på tiotalssiffran: 0–4 nedåt, 5–9 uppåt.");},
+      ()=>{const prices=[rint(18,42),rint(18,42),rint(18,42)],estimate=prices.reduce((s,v)=>s+Math.round(v/10)*10,0); return mcq(4,`Tre saker kostar ${prices.join(" kr, ")} kr. Vilket är bästa överslaget om varje pris avrundas till tiotal?`,`${estimate} kr`,[`${estimate-10} kr`,`${estimate+10} kr`,`${prices.reduce((s,v)=>s+v,0)} kr`],"Avrunda varje pris till närmaste tiotal och summera.");}
+    ],
+    5:[
+      ()=>{const a=rint(2,7),b=rint(2,8),c=rint(2,6),ans=(a+b)*c; return inputQ(5,`Räkna ut: (${a} + ${b}) × ${c}`,ans,"Parentesen räknas först, sedan multiplikationen.");},
+      ()=>{const a=rint(3,9),b=rint(2,5),c=rint(1,b-1),ans=a*b-a*c; return inputQ(5,`Räkna ut: ${a} × ${b} − ${a} × ${c}`,ans,"Gör båda multiplikationerna före subtraktionen.");}
+    ],
+    6:[
+      ()=>{const den=pick([3,4,5,6,8]),whole=rint(1,4),num=rint(1,den-1),top=whole*den+num; return inputQ(6,`Skriv ${top}/${den} i blandad form.`,`${whole} ${num}/${den}`,`Nämnaren ${den} ryms ${whole} hela gånger och ${num} blir över.`);},
+      ()=>{const den=pick([4,5,6,8]),a=rint(1,den-2),b=rint(a+1,den-1); return mcq(6,`Vilket bråk är minst?`,`${a}/${den}`,[`${b}/${den}`,`${den-1}/${den}`],"När nämnaren är samma är bråket med minst täljare minst.");}
+    ],
+    7:[
+      ()=>{const den=pick([5,6,8,10]),a=rint(1,den-2),b=rint(1,den-a-1),sum=a+b; return inputQ(7,`Räkna ut och förkorta om möjligt: ${a}/${den} + ${b}/${den}`,frac(sum,den),"När nämnarna är lika adderar du täljarna.");},
+      ()=>{const den=pick([5,6,8,10]),a=rint(2,den-1),b=rint(1,a-1); return inputQ(7,`Räkna ut och förkorta om möjligt: ${a}/${den} − ${b}/${den}`,frac(a-b,den),"När nämnarna är lika subtraherar du täljarna.");}
+    ],
+    8:[
+      ()=>{const item=pick([{d:"0,5",p:"50%"},{d:"0,25",p:"25%"},{d:"0,75",p:"75%"},{d:"0,2",p:"20%"}]); return mcq(8,`Vilket bråk är lika med ${item.d}?`,{"0,5":"1/2","0,25":"1/4","0,75":"3/4","0,2":"1/5"}[item.d],["1/10","2/3","4/5"],"Tänk på kända samband mellan bråk och decimaltal.");},
+      ()=>{const pct=pick([10,20,25,50,75]),decimal=sv(pct/100); return inputQ(8,`Fyll i luckan: ${decimal} = ___ %`,pct,"Multiplicera decimaltalet med 100.",[`${pct}%`]);}
+    ],
+    9:[
+      ()=>{const pct=pick([10,20,25,50]),price=pick([120,160,200,240,400,800]),discount=price*pct/100,newPrice=price-discount; return inputQ(9,`En vara kostar ${price} kr och har ${pct}% rabatt. Vad blir det nya priset?`,newPrice,`Rabatten är ${discount} kr. Dra den från ursprungspriset.`,[`${newPrice} kr`]);},
+      ()=>{const part=pick([8,12,15,20,25]),pct=pick([10,20,25,50]),whole=part*100/pct; return inputQ(9,`${pct}% av ett tal är ${part}. Vilket är hela talet?`,whole,"Arbeta baklänges från procentdelen till 100%.");}
+    ],
+    10:[
+      ()=>{const people=rint(2,5),newPeople=people*2,eggs=rint(1,4),milk=rint(2,6); return inputQ(10,`Ett recept för ${people} personer kräver ${eggs} ägg och ${milk} dl mjölk. Hur många dl mjölk behövs för ${newPeople} personer?`,milk*2,"Antalet personer fördubblas, så alla mängder fördubblas.",[`${milk*2} dl`]);},
+      ()=>{const amount=rint(2,6),unit=rint(8,24),money=amount*unit; return inputQ(10,`${amount} hg godis kostar ${money} kr. Hur många hg får du för ${unit*5} kr?`,5,`Ett hg kostar ${unit} kr. Dela pengarna med styckepriset.`,["5 hg"]);}
+    ],
+    11:[
+      ()=>mcq(11,"Vilket påstående är sant om en kvadrat?","Alla fyra sidor är lika långa.",["Den har tre hörn.","Bara två sidor är lika långa.","Den är tredimensionell."],"En kvadrat har fyra lika långa sidor och fyra räta vinklar."),
+      ()=>mcq(11,"Vilket objekt är tredimensionellt?","rätblock",["cirkel","triangel","rektangel"],"Ett rätblock har längd, bredd och höjd.")
+    ],
+    12:[
+      ()=>{const w=rint(3,12),h=rint(2,10),perimeter=2*(w+h); return inputQ(12,`En rektangel är ${w} cm lång och ${h} cm bred. Hur stor är omkretsen?`,perimeter,"Omkrets = 2 × längd + 2 × bredd.",[`${perimeter} cm`]);},
+      ()=>{const perimeter=pick([20,24,28,32,36,40]),side=perimeter/4; return inputQ(12,`En kvadrat har omkretsen ${perimeter} m. Hur lång är en sida?`,side,"En kvadrat har fyra lika långa sidor. Dela omkretsen med 4.",[`${side} m`]);},
+      ()=>{const m=rint(1,8),cm=m*100; return inputQ(12,`Omvandla ${m} meter till centimeter.`,cm,"En meter är 100 centimeter.",[`${cm} cm`]);}
+    ],
+    13:[
+      ()=>mcq(13,"Hur stor är varje vinkel i en kvadrat?","90°",["45°","60°","180°"],"Alla fyra hörn i en kvadrat är räta vinklar."),
+      ()=>{const equal=pick([40,50,60,70]),third=180-2*equal; return inputQ(13,`En likbent triangel har två vinklar som är ${equal}° vardera. Hur stor är den tredje vinkeln?`,third,"Alla tre vinklar är tillsammans 180°.",[`${third}°`]);}
+    ],
+    14:[
+      ()=>{const scale=pick([2,3,4,5]),actual=rint(2,9),drawing=actual*scale; return inputQ(14,`En insekt är ${actual} mm lång i verkligheten och ritas i skala ${scale}:1. Hur lång blir den på bilden?`,drawing,"Vid en förstoring multiplicerar du med skalfaktorn.",[`${drawing} mm`]);},
+      ()=>{const scale=pick([100,200,500]),actualM=pick([2,4,6,8,10]),drawingCm=actualM*100/scale; return inputQ(14,`En verklig sträcka är ${actualM} m. Hur många cm blir den på en ritning i skala 1:${scale}?`,sv(drawingCm),"Gör först om meter till centimeter och dela sedan med skaltalet.",[`${sv(drawingCm)} cm`]);}
+    ],
+    15:[
+      ()=>{const start=rint(-3,4),end=start+rint(3,9),change=end-start; return inputQ(15,`Ett linjediagram visar ${start}°C på morgonen och ${end}°C mitt på dagen. Hur stor är ökningen?`,change,"Förändringen är slutvärdet minus startvärdet.",[`${change}°`]);},
+      ()=>{const total=pick([40,60,80,100]),cats=total/4,dogs=total/2,other=total-cats-dogs; return inputQ(15,`I ett cirkeldiagram är hälften av ${total} djur hundar och en fjärdedel katter. Hur många är något annat?`,other,"En halv plus en fjärdedel är tre fjärdedelar. En fjärdedel återstår.");}
+    ],
+    16:[
+      ()=>{const mode=rint(2,9),other1=mode===2?3:mode-1,other2=mode===9?8:mode+1,arr=shuffle([mode,other1,mode,other2,mode]); return inputQ(16,`Bestäm typvärdet: ${arr.join(", ")}`,mode,"Typvärdet är det tal som förekommer flest gånger.");},
+      ()=>{const arr=[rint(1,4),rint(5,7),rint(8,10),rint(11,14),rint(15,18)].sort((a,b)=>a-b); return inputQ(16,`Bestäm medianen: ${shuffle(arr).join(", ")}`,arr[2],"Sortera fem tal. Medianen är talet i mitten.");}
+    ],
+    17:[
+      ()=>{const start=rint(20,40),d=rint(2,7),arr=[start,start-d,start-2*d,start-3*d]; return inputQ(17,`Vilket tal kommer härnäst? ${arr.join(", ")}, ___`,start-4*d,`Följden minskar med ${d} varje gång.`);},
+      ()=>{const first=rint(3,7),increase=rint(2,5),figure=rint(4,8),ans=first+(figure-1)*increase; return inputQ(17,`Figur 1 byggs av ${first} stickor. Varje ny figur behöver ${increase} stickor till. Hur många stickor behövs till figur ${figure}?`,ans,`Starta på ${first} och lägg till ${increase} totalt ${figure-1} gånger.`);}
+    ],
+    18:[
+      ()=>{const xCount=rint(2,5),yCount=rint(2,4); return inputQ(18,`Förenkla: ${Array(xCount).fill("x").concat(Array(yCount).fill("y")).join(" + ")}`,`${xCount}x + ${yCount}y`,"Samla x-termer för sig och y-termer för sig.",[`${xCount}x+${yCount}y`]);},
+      ()=>{const x=rint(2,9),a=rint(10,20),ans=a-x; return inputQ(18,`Beräkna ${a} − x när x = ${x}.`,ans,`Byt ut x mot ${x} och subtrahera.`);},
+      ()=>mcq(18,"Vilket av följande är ett algebraiskt uttryck?","3x + 2",["3 + 2 = 5","x = 4","7 > 3"],"Ett uttryck innehåller inget likhetstecken.")
+    ],
+    19:[
+      ()=>{const ans=rint(6,20),a=rint(2,7),b=ans-a; return inputQ(19,`Lös ekvationen: x − ${a} = ${b}`,ans,`Lägg tillbaka ${a} på båda sidor.`);},
+      ()=>{const ans=rint(2,9),factor=rint(2,6),product=ans*factor; return inputQ(19,`Lös ekvationen: ${factor}x = ${product}`,ans,`Dela båda sidor med ${factor}.`);},
+      ()=>{const ans=rint(4,12),divisor=pick([2,3,4]),quotient=ans; return inputQ(19,`Lös ekvationen: x ÷ ${divisor} = ${quotient}`,ans*divisor,`Multiplicera båda sidor med ${divisor}.`);}
+    ],
+    20:[
+      ()=>{const bat=rint(2,8),diff=rint(10,30),total=bat+(bat+diff); return inputQ(20,`En glass och en klubba kostar tillsammans ${total} kr. Glassen kostar ${diff} kr mer än klubban. Vad kostar klubban?`,bat,`Om klubban kostar ${bat} kr kostar glassen ${bat+diff} kr; tillsammans ${total} kr.`,[`${bat} kr`]);},
+      ()=>{const x=rint(2,8),leftAdd=rint(1,6),rightAdd=x+leftAdd; return inputQ(20,`Vilket värde på x gör likheten sann? 2x + ${leftAdd} = x + ${rightAdd}`,x,"Ta bort ett x från båda sidor och jämför det som återstår.");},
+      ()=>{const packs=rint(3,8),per=rint(4,9),used=rint(2,per-1),left=packs*per-used; return inputQ(20,`${packs} paket innehåller ${per} pennor vardera. ${used} pennor används. Hur många finns kvar?`,left,"Multiplicera först antal paket med pennor per paket och subtrahera sedan de använda.");}
+    ]
+  };
+  return pick([original,...variants[lesson]])();
+}
+
+let state={count:10,index:0,score:0,streak:0,questions:[],stats:{},answered:false,selected:null};
+
+function normalize(s){
+  let value=String(s)
+    .trim()
+    .toLowerCase()
+    .replace(/−/g,"-")
+    .replace(/,/g,".")
+    .replace(/\s+/g,"");
+
+  // Tillåt att eleven skriver den enhet som efterfrågas, exempelvis
+  // "350 cm", "12 kr", "45°", "20 %" eller "24 cm²".
+  value=value
+    .replace(/(kvadratcentimeter|kvadratmeter|centimeter|millimeter|decimeter|kilometer|meter|kronor|krona|grader|procent)$/,"")
+    .replace(/(cm²|cm2|m²|m2|mm|cm|dm|km|kg|hg|dl|ml|kr|°|%)$/,"");
+
+  return value;
+}
+function isCorrect(q,val){
+  const candidates=[q.answer,...(q.aliases||[])].map(normalize);
+  return candidates.includes(normalize(val));
+}
+function buildSet(count){
+  const lessons=[];
+  while(lessons.length<count){
+    lessons.push(...shuffle([...Array(20)].map((_,i)=>i+1)));
+  }
+  return lessons.slice(0,count).map(makeVariedQuestion);
+}
+function startGame(count){
+  state={count,index:0,score:0,streak:0,questions:buildSet(count),stats:{},answered:false,selected:null};
+  document.getElementById("start").classList.add("hidden");
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+  render();
+}
+function render(){
+  const q=state.questions[state.index];
+  state.answered=false; state.selected=null;
+  qCounter.textContent=`${state.index+1} / ${state.count}`;
+  scoreChip.textContent=`Rätt: ${state.score}`;
+  streakChip.textContent=`🔥 ${state.streak}`;
+  progressFill.style.width=`${state.index/state.count*100}%`;
+  lessonTag.textContent=`Dag ${q.lesson} • ${topics[q.lesson]}`;
+  questionText.textContent=q.q;
+  feedback.className="feedback hidden"; feedback.textContent="";
+  helpBox.classList.add("hidden"); helpBox.innerHTML="";
+  checkBtn.textContent="Kontrollera";
+  let area=document.getElementById("answerArea"); area.innerHTML="";
+  if(q.type==="mcq"){
+    const wrap=document.createElement("div"); wrap.className="answer-grid";
+    q.options.forEach(o=>{
+      const b=document.createElement("button"); b.className="option"; b.textContent=o;
+      b.onclick=()=>{ if(state.answered)return; [...wrap.children].forEach(x=>x.classList.remove("selected")); b.classList.add("selected"); state.selected=o; };
+      wrap.appendChild(b);
+    }); area.appendChild(wrap);
+  }else{
+    const inp=document.createElement("input"); inp.className="answer-input"; inp.id="answerInput";
+    inp.placeholder="Skriv ditt svar"; inp.autocomplete="off";
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter") checkAnswer();});
+    area.appendChild(inp); setTimeout(()=>inp.focus(),50);
+  }
+}
+function checkAnswer(){
+  const q=state.questions[state.index];
+  if(state.answered){ nextQuestion(); return; }
+  let val=q.type==="mcq"?state.selected:document.getElementById("answerInput").value;
+  if(val===null||String(val).trim()===""){alert("Skriv eller välj ett svar först.");return;}
+  const ok=isCorrect(q,val); state.answered=true;
+  const topic=topics[q.lesson];
+  if(!state.stats[topic])state.stats[topic]={right:0,total:0};
+  state.stats[topic].total++;
+  if(ok){
+    state.score++; state.streak++; state.stats[topic].right++;
+    feedback.className="feedback correct"; feedback.textContent=`✓ Rätt! ${q.explain}`;
+  }else{
+    state.streak=0;
+    feedback.className="feedback wrong"; feedback.innerHTML=`✗ Inte riktigt. Rätt svar är <strong>${q.answer}</strong>. ${q.explain}`;
+  }
+  scoreChip.textContent=`Rätt: ${state.score}`; streakChip.textContent=`🔥 ${state.streak}`;
+  checkBtn.textContent=state.index===state.count-1?"Visa resultat":"Nästa fråga";
+}
+function nextQuestion(){
+  state.index++;
+  if(state.index>=state.count){finish();return;}
+  if(state.index%10===0){showMilestone();} else render();
+}
+function showMilestone(){
+  const done=state.index, pct=Math.round(state.score/done*100);
+  mileBadge.textContent=pct>=90?"🏆":pct>=75?"🥇":pct>=60?"🥈":"🌱";
+  mileTitle.textContent=`${done} frågor klara!`;
+  mileText.textContent=`Du har ${state.score} rätt av ${done} (${pct} %).`;
+  milestone.classList.remove("hidden");
+}
+function finish(){
+  quiz.classList.add("hidden"); result.classList.remove("hidden");
+  const pct=Math.round(state.score/state.count*100);
+  const passed=pct>90;
+  resultTitle.textContent=passed?"Mattemästare!":"Bra tränat!";
+  resultScore.textContent=`${state.score} / ${state.count} • ${pct} %`;
+  resultScore.className=`result-big ${passed?"pass":"fail"}`;
+  resultText.textContent=state.count===100
+    ? (passed?"Du klarade gränsen på över 90 %. Fantastiskt arbete!":"För godkänt på Mattemästarprovet behövs minst 91 rätt. Träna gärna på områdena nedan och försök igen.")
+    : (passed?"Du nådde över 90 % på detta pass.":"Nästa mål är över 90 %.");
+  topicStats.innerHTML="";
+  Object.entries(state.stats).sort().forEach(([topic,s])=>{
+    const p=Math.round(s.right/s.total*100);
+    topicStats.insertAdjacentHTML("beforeend",`<div class="topic-row"><strong>${topic}</strong><div class="mini-bar"><div style="width:${p}%"></div></div><span>${p}%</span></div>`);
+  });
+  progressFill.style.width="100%";
+  localStorage.setItem("mattemastaren_last",JSON.stringify({date:new Date().toLocaleDateString("sv-SE"),score:state.score,count:state.count,pct}));
+}
+document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>startGame(Number(b.dataset.count)));
+checkBtn.onclick=checkAnswer;
+helpBtn.onclick=()=>{
+  const q=state.questions[state.index];
+  helpBox.innerHTML=`<strong>Hjälp från Dag ${q.lesson}</strong><br>${theory[q.lesson]}`;
+  helpBox.classList.toggle("hidden");
+};
+mileBtn.onclick=()=>{milestone.classList.add("hidden");render();};
+againBtn.onclick=()=>startGame(state.count);
+homeBtn.onclick=()=>{result.classList.add("hidden");start.classList.remove("hidden");showSaved();};
+
+function runSelfTest(){
+  const problems=[];
+  for(let lesson=1;lesson<=20;lesson++){
+    for(let i=0;i<250;i++){
+      const q=makeVariedQuestion(lesson);
+      if(!q || !q.q || q.answer===undefined) problems.push(`Dag ${lesson}: ofullständig fråga`);
+      if(q && q.type==="mcq"){
+        if(!q.options.includes(String(q.answer))) problems.push(`Dag ${lesson}: rätt svar saknas`);
+        if(new Set(q.options).size!==q.options.length) problems.push(`Dag ${lesson}: dubbla svarsalternativ`);
+      }
+    }
+  }
+  if(problems.length) console.error("Mattemästaren – självtest hittade problem:",problems.slice(0,20));
+  else console.info("Mattemästaren – självtest godkänt.");
+}
+
+function showSaved(){
+  const saved=localStorage.getItem("mattemastaren_last");
+  if(saved){
+    const s=JSON.parse(saved);
+    savedInfo.classList.remove("hidden");
+    savedInfo.innerHTML=`<strong>Senaste resultat:</strong> ${s.score}/${s.count} (${s.pct} %) den ${s.date}.`;
+  }
+}
+runSelfTest();
+showSaved();
+</script>
+</body>
+</html>
