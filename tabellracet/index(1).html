@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tabellracet">
+  <title>Tabellracet</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --text:#172033;
+      --muted:#69758c;
+      --line:#e4e9f2;
+      --accent:#5b63e6;
+      --accent2:#7a5de8;
+      --good:#1e9e65;
+      --bad:#d65454;
+      --warning:#f6c65b;
+      --shadow:0 10px 30px rgba(36,45,75,.08);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif}
+    body{overscroll-behavior:none}
+    button,input{font:inherit}
+    button{border:0;cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:3px solid rgba(91,99,230,.3);outline-offset:2px}
+
+    .app{
+      min-height:100dvh;
+      padding:
+        calc(env(safe-area-inset-top) + 14px)
+        16px
+        calc(env(safe-area-inset-bottom) + 22px);
+      max-width:620px;
+      margin:0 auto;
+    }
+
+    .view{display:none}
+    .view.active{display:block}
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .brand h1{font-size:28px;line-height:1.05;margin:0;letter-spacing:-.6px}
+    .brand p{margin:4px 0 0;color:var(--muted);font-size:14px}
+
+    .icon-btn{
+      width:44px;height:44px;border-radius:14px;background:var(--card);
+      box-shadow:var(--shadow);color:var(--text);font-size:20px;
+      display:grid;place-items:center;
+    }
+
+    .hero{
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:white;
+      border-radius:28px;
+      padding:20px;
+      box-shadow:0 14px 34px rgba(91,99,230,.24);
+      margin-bottom:18px;
+    }
+
+    .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+    .hello{font-size:14px;opacity:.86;margin-bottom:4px}
+    .player-name{font-size:25px;font-weight:800;letter-spacing:-.4px}
+    .pb{
+      padding:8px 10px;background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:14px;text-align:right;min-width:105px
+    }
+    .pb span{display:block;font-size:11px;opacity:.8;text-transform:uppercase;letter-spacing:.08em}
+    .pb strong{font-size:20px}
+
+    .stats{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px
+    }
+    .stat{
+      background:rgba(255,255,255,.12);border-radius:14px;padding:10px 8px;text-align:center
+    }
+    .stat strong{display:block;font-size:18px}
+    .stat span{font-size:11px;opacity:.8}
+
+    .start-btn{
+      width:100%;
+      margin-top:16px;
+      min-height:58px;
+      border-radius:18px;
+      background:white;color:#4e54cf;
+      font-size:17px;font-weight:850;letter-spacing:.02em;
+      box-shadow:0 8px 20px rgba(33,37,90,.15);
+    }
+    .start-btn:active{transform:scale(.985)}
+
+    .deep-dive-btn{
+      width:100%;
+      margin-top:10px;
+      min-height:52px;
+      border-radius:18px;
+      background:rgba(255,255,255,.13);
+      color:white;
+      border:1px solid rgba(255,255,255,.22);
+      font-size:15px;
+      font-weight:850;
+      letter-spacing:.02em;
+    }
+    .deep-dive-btn:active{transform:scale(.985)}
+
+    .deep-dive-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:16px;
+    }
+    .deep-dive-choice{
+      position:relative;
+      min-height:112px;
+      border-radius:18px;
+      padding:14px;
+      text-align:left;
+      background:#f7f8fb;
+      border:1px solid var(--line);
+      color:var(--text);
+    }
+    .deep-dive-choice:active{transform:scale(.98)}
+    .deep-dive-choice.completed{
+      background:#eefbf5;
+      border-color:#bce9d3;
+    }
+    .deep-dive-choice .choice-number{
+      display:block;
+      font-size:28px;
+      line-height:1;
+      font-weight:950;
+      color:#4f56cc;
+      margin-bottom:9px;
+    }
+    .deep-dive-choice.completed .choice-number{color:var(--good)}
+    .deep-dive-choice strong{
+      display:block;
+      font-size:14px;
+      margin-bottom:4px;
+    }
+    .deep-dive-choice small{
+      display:block;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.3;
+    }
+    .deep-dive-check{
+      position:absolute;
+      top:11px;
+      right:11px;
+      width:25px;
+      height:25px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:var(--good);
+      color:white;
+      font-size:14px;
+      font-weight:950;
+    }
+
+    .section-head{
+      display:flex;align-items:end;justify-content:space-between;gap:12px;
+      margin:20px 2px 12px;
+    }
+    .section-head h2{font-size:19px;margin:0;letter-spacing:-.2px}
+    .section-head p{font-size:12px;margin:0;color:var(--muted)}
+
+    .table-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+
+    .table-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:16px;
+      min-height:116px;
+      text-align:left;
+      box-shadow:0 5px 18px rgba(35,45,74,.045);
+      transition:transform .12s ease,box-shadow .12s ease;
+    }
+    .table-card:active{transform:scale(.98)}
+    .table-num{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      font-size:21px;font-weight:900;
+      background:#eef0ff;color:#4f56cc;
+      margin-bottom:12px;
+    }
+    .table-card strong{display:block;font-size:16px}
+    .table-card small{display:block;color:var(--muted);margin-top:3px;font-size:12px}
+
+    /* Game */
+    #gameView{min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 36px)}
+    .game-shell{min-height:inherit;display:flex;flex-direction:column}
+    .game-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .game-meta{font-weight:750;font-size:14px;color:var(--muted)}
+    .timer{
+      font-variant-numeric:tabular-nums;
+      font-size:22px;font-weight:900;letter-spacing:.02em;
+      background:var(--card);border:1px solid var(--line);
+      border-radius:14px;padding:8px 11px;
+    }
+
+    .progress{
+      height:8px;border-radius:999px;background:#e7eaf2;overflow:hidden;margin-bottom:18px
+    }
+    .progress > span{
+      display:block;height:100%;width:0%;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      border-radius:inherit;transition:width .2s ease
+    }
+
+    .question-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+    .question-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:30px;
+      box-shadow:var(--shadow);
+      padding:34px 20px;
+      text-align:center;
+      margin-bottom:18px;
+      transition:transform .15s ease,background .18s ease,border-color .18s ease;
+    }
+    .question-label{
+      text-transform:uppercase;letter-spacing:.12em;font-weight:800;
+      font-size:11px;color:var(--muted);margin-bottom:16px
+    }
+    .question{
+      font-size:56px;line-height:1;font-weight:950;letter-spacing:-2px;
+      font-variant-numeric:tabular-nums;
+    }
+    .question-card.correct{
+      background:#eefbf5;border-color:#bce9d3;transform:scale(.99)
+    }
+
+    .answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .answer-btn{
+      min-height:76px;
+      border-radius:20px;
+      background:var(--card);
+      border:1px solid var(--line);
+      box-shadow:0 5px 16px rgba(34,44,72,.05);
+      color:var(--text);
+      font-size:25px;font-weight:850;
+      font-variant-numeric:tabular-nums;
+      transition:transform .09s ease,background .12s ease,border-color .12s ease;
+      touch-action:manipulation;
+    }
+    .answer-btn:active{transform:scale(.975)}
+    .answer-btn.wrong{background:#fff0f0;border-color:#f0bcbc;color:#b53f3f}
+    .answer-btn:disabled{cursor:default}
+
+    .quit-btn{
+      align-self:center;background:transparent;color:var(--muted);
+      padding:14px 18px 4px;font-size:13px
+    }
+
+    /* overlays */
+    .overlay{
+      position:fixed;inset:0;z-index:50;
+      background:rgba(18,25,43,.38);
+      backdrop-filter:blur(7px);
+      -webkit-backdrop-filter:blur(7px);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding:20px 14px calc(env(safe-area-inset-bottom) + 14px);
+    }
+    .overlay.show{display:flex}
+    .sheet{
+      width:min(100%,560px);
+      max-height:88dvh;
+      overflow:auto;
+      background:var(--card);
+      border-radius:28px;
+      padding:20px;
+      box-shadow:0 22px 60px rgba(19,27,48,.24);
+      animation:sheetIn .2s ease-out;
+    }
+    @keyframes sheetIn{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}
+    .sheet h2{margin:0;font-size:24px;letter-spacing:-.4px}
+    .sheet-sub{margin:6px 0 16px;color:var(--muted);font-size:14px}
+    .sheet-actions{display:flex;gap:10px;margin-top:18px}
+    .primary,.secondary,.danger{
+      flex:1;min-height:50px;border-radius:16px;font-weight:800
+    }
+    .primary{background:var(--accent);color:white}
+    .secondary{background:#edf0f6;color:var(--text)}
+    .danger{background:#fff0f0;color:#b44545}
+
+    .profile-list{display:grid;gap:9px;margin:14px 0}
+    .profile-btn{
+      width:100%;display:flex;align-items:center;justify-content:space-between;
+      gap:12px;text-align:left;background:#f7f8fb;border:1px solid var(--line);
+      padding:13px 14px;border-radius:16px;color:var(--text);
+    }
+    .profile-main strong{display:block;font-size:16px}
+    .profile-main small{display:block;color:var(--muted);margin-top:2px}
+    .arrow{color:var(--muted);font-size:20px}
+
+    .name-form{display:flex;gap:9px;margin-top:12px}
+    .name-input{
+      flex:1;min-width:0;min-height:50px;border-radius:15px;
+      border:1px solid var(--line);background:#f8f9fc;
+      padding:0 14px;color:var(--text);font-size:16px
+    }
+    .name-submit{
+      min-width:92px;border-radius:15px;background:var(--accent);color:white;font-weight:800
+    }
+    .error{font-size:12px;color:var(--bad);min-height:16px;margin-top:6px}
+
+    .full-table{
+      margin-top:16px;display:grid;gap:7px
+    }
+    .table-row{
+      display:flex;align-items:center;justify-content:center;
+      min-height:42px;border-radius:13px;background:#f6f7fb;
+      font-variant-numeric:tabular-nums;font-size:17px;font-weight:700;
+      transition:background .15s ease,transform .15s ease
+    }
+    .table-row.highlight{
+      background:#fff1b8;
+      box-shadow:inset 0 0 0 2px #f0c34a;
+      transform:scale(1.025);
+      font-weight:950
+    }
+    .study-note{
+      background:#fff8dc;border:1px solid #f4df90;color:#6b5820;
+      border-radius:15px;padding:11px 12px;margin-top:12px;font-size:13px
+    }
+
+    /* Result */
+    .result-card{text-align:center;padding:10px 0 2px}
+    .result-kicker{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:850}
+    .result-time{font-size:54px;letter-spacing:-2px;font-weight:950;margin:8px 0 3px;font-variant-numeric:tabular-nums}
+    .result-score{font-size:17px;color:var(--muted)}
+    .record{
+      margin:18px 0 4px;background:#fff5c9;border:1px solid #f3d76c;
+      color:#675117;border-radius:18px;padding:13px;font-weight:900;
+      display:none
+    }
+    .record.show{display:block}
+
+    .result-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0}
+    .result-stat{background:#f6f7fb;border-radius:16px;padding:13px}
+    .result-stat strong{display:block;font-size:21px}
+    .result-stat span{font-size:12px;color:var(--muted)}
+
+    #confettiCanvas{
+      position:fixed;inset:0;z-index:80;pointer-events:none;
+      width:100%;height:100%;display:none
+    }
+
+    .settings-row{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 0;border-bottom:1px solid var(--line);gap:12px
+    }
+    .settings-row:last-of-type{border-bottom:0}
+    .settings-copy strong{display:block;font-size:15px}
+    .settings-copy small{display:block;color:var(--muted);margin-top:2px}
+    .mini-btn{
+      background:#edf0f6;color:var(--text);border-radius:12px;
+      padding:9px 11px;font-size:13px;font-weight:750;white-space:nowrap
+    }
+    .mini-btn.dangerish{background:#fff0f0;color:#b44545}
+
+    @media (min-width:520px){
+      .app{padding-left:20px;padding-right:20px}
+      .table-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .question{font-size:66px}
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="confettiCanvas"></canvas>
+
+  <main class="app">
+    <section id="homeView" class="view active" aria-label="Startsida">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Tabellracet</h1>
+          <p>Lär dig tabellerna. Slå din tid.</p>
+        </div>
+        <button class="icon-btn" id="settingsBtn" aria-label="Inställningar">⚙︎</button>
+      </div>
+
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <div class="hello">Spelare</div>
+            <div class="player-name" id="homePlayerName">–</div>
+          </div>
+          <div class="pb">
+            <span>Personbästa</span>
+            <strong id="homeBest">–</strong>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><strong id="homeAccuracy">–</strong><span>rätt</span></div>
+          <div class="stat"><strong id="homeCorrect">0</strong><span>rätt</span></div>
+          <div class="stat"><strong id="homeWrong">0</strong><span>fel</span></div>
+          <div class="stat"><strong id="homeGames">0</strong><span>spel</span></div>
+        </div>
+
+        <button class="start-btn" id="startGameBtn">STARTA SPEL</button>
+        <button class="deep-dive-btn" id="deepDiveBtn">DJUPDYK I EN TABELL</button>
+      </div>
+
+      <div class="section-head">
+        <div>
+          <h2>Tabellerna</h2>
+          <p>Tryck för att repetera</p>
+        </div>
+        <p>2–9</p>
+      </div>
+
+      <div class="table-grid" id="tableGrid"></div>
+    </section>
+
+    <section id="gameView" class="view" aria-label="Spel">
+      <div class="game-shell">
+        <div class="game-head">
+          <div class="game-meta" id="questionCount">Fråga 1 av 10</div>
+          <div class="timer" id="timer">00:00,0</div>
+        </div>
+
+        <div class="progress"><span id="progressBar"></span></div>
+
+        <div class="question-wrap">
+          <div class="question-card" id="questionCard">
+            <div class="question-label">Vad blir det?</div>
+            <div class="question" id="questionText">7 × 8</div>
+          </div>
+
+          <div class="answers" id="answers"></div>
+        </div>
+
+        <button class="quit-btn" id="quitGameBtn">Avsluta spelet</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Profile chooser -->
+  <div class="overlay" id="profileOverlay" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <div class="sheet">
+      <h2 id="profileTitle">Vem spelar?</h2>
+      <p class="sheet-sub">Välj en profil eller lägg till ett nytt namn.</p>
+      <div class="profile-list" id="profileList"></div>
+
+      <form id="nameForm">
+        <div class="name-form">
+          <input id="nameInput" class="name-input" maxlength="24" autocomplete="off" placeholder="Nytt namn" aria-label="Nytt namn">
+          <button class="name-submit" type="submit">Lägg till</button>
+        </div>
+        <div class="error" id="nameError"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deep-dive chooser -->
+  <div class="overlay" id="deepDiveOverlay" role="dialog" aria-modal="true" aria-labelledby="deepDiveTitle">
+    <div class="sheet">
+      <h2 id="deepDiveTitle">Djupdyk</h2>
+      <p class="sheet-sub">Välj en tabell. Du får 50 frågor. Klarar du alla rätt markeras tabellen som avklarad.</p>
+      <div class="deep-dive-grid" id="deepDiveGrid"></div>
+      <div class="sheet-actions">
+        <button class="secondary" id="closeDeepDiveBtn">Tillbaka</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table / correction overlay -->
+  <div class="overlay" id="tableOverlay" role="dialog" aria-modal="true" aria-labelledby="tableTitle">
+    <div class="sheet">
+      <h2 id="tableTitle">7:ans tabell</h2>
+      <p class="sheet-sub" id="tableSub">Repetera i lugn och ro.</p>
+      <div class="full-table" id="fullTable"></div>
+      <div class="study-note" id="studyNote" hidden>Rätt svar är markerat. Nästa fråga kommer strax.</div>
+      <div class="sheet-actions" id="tableActions">
+        <button class="primary" id="closeTableBtn">Klart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result overlay -->
+  <div class="overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="sheet">
+      <div class="result-card">
+        <div class="result-kicker" id="resultTitle">Målgång</div>
+        <div class="result-time" id="resultTime">28,6 s</div>
+        <div class="result-score" id="resultScore">9 av 10 rätt</div>
+
+        <div class="record" id="recordBanner">🎉 NYTT PERSONBÄSTA!</div>
+
+        <div class="result-stats">
+          <div class="result-stat"><strong id="resultCorrect">9</strong><span>rätt</span></div>
+          <div class="result-stat"><strong id="resultWrong">1</strong><span>fel</span></div>
+        </div>
+
+        <div class="sheet-actions">
+          <button class="secondary" id="resultHomeBtn">Startsidan</button>
+          <button class="primary" id="playAgainBtn">Spela igen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="sheet">
+      <h2 id="settingsTitle">Inställningar</h2>
+      <p class="sheet-sub">Profil och sparad statistik på den här enheten.</p>
+
+      <div class="settings-row">
+        <div class="settings-copy">
+          <strong>Byt spelare</strong>
+          <small>Välj eller skapa en annan profil</small>
+        </div>
+        <button class="mini-btn" id="switchPlayerBtn">Byt</button>
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-copy">
+          <strong>Nollställ statistik</strong>
+          <small>Personbästa, rätt/fel och antal spel</small>
+        </div>
+        <button class="mini-btn dangerish" id="resetStatsBtn">Nollställ</button>
+      </div>
+
+      <div class="sheet-actions">
+        <button class="primary" id="closeSettingsBtn">Klart</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "tabellracet_profiles_v1";
+  const CURRENT_KEY = "tabellracet_current_profile_v1";
+  const REGULAR_GAME_LENGTH = 10;
+  const DEEP_DIVE_LENGTH = 50;
+  const WRONG_REVIEW_MS = 3000;
+
+  const $ = (id) => document.getElementById(id);
+  const homeView = $("homeView");
+  const gameView = $("gameView");
+
+  let profiles = loadProfiles();
+  let currentProfileId = null;
+
+  let game = null;
+  let timerRAF = null;
+  let correctionTimeout = null;
+
+  // ---------- Storage ----------
+  function loadProfiles() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveProfiles() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
+  }
+
+  function saveCurrentProfile() {
+    if (currentProfileId) localStorage.setItem(CURRENT_KEY, currentProfileId);
+  }
+
+  function getCurrentProfile() {
+    return profiles.find(p => p.id === currentProfileId) || null;
+  }
+
+  function makeId() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function normalizeProfile(p) {
+    return {
+      id: String(p.id || makeId()),
+      name: String(p.name || "Spelare"),
+      bestTimeMs: Number.isFinite(p.bestTimeMs) ? p.bestTimeMs : null,
+      totalCorrect: Number.isFinite(p.totalCorrect) ? p.totalCorrect : 0,
+      totalWrong: Number.isFinite(p.totalWrong) ? p.totalWrong : 0,
+      gamesPlayed: Number.isFinite(p.gamesPlayed) ? p.gamesPlayed : 0,
+      deepDiveCompleted: Array.isArray(p.deepDiveCompleted)
+        ? [...new Set(p.deepDiveCompleted.map(Number).filter(n => n >= 2 && n <= 9))]
+        : []
+    };
+  }
+
+  profiles = profiles.map(normalizeProfile);
+  saveProfiles();
+
+  // ---------- Helpers ----------
+  function shuffle(arr) {
+    const copy = arr.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function formatTimer(ms) {
+    const totalTenths = Math.floor(ms / 100);
+    const minutes = Math.floor(totalTenths / 600);
+    const seconds = Math.floor((totalTenths % 600) / 10);
+    const tenths = totalTenths % 10;
+    return `${String(minutes).padStart(2,"0")}:${String(seconds).padStart(2,"0")},${tenths}`;
+  }
+
+  function formatBest(ms) {
+    if (!Number.isFinite(ms)) return "–";
+    return `${(ms / 1000).toFixed(1).replace(".", ",")} s`;
+  }
+
+  function showView(view) {
+    homeView.classList.toggle("active", view === "home");
+    gameView.classList.toggle("active", view === "game");
+    window.scrollTo(0, 0);
+  }
+
+  function showOverlay(el) { el.classList.add("show"); }
+  function hideOverlay(el) { el.classList.remove("show"); }
+
+  // ---------- Home / tables ----------
+  function buildTableCards() {
+    const grid = $("tableGrid");
+    grid.innerHTML = "";
+    for (let n = 2; n <= 9; n++) {
+      const btn = document.createElement("button");
+      btn.className = "table-card";
+      btn.innerHTML = `
+        <span class="table-num">${n}</span>
+        <strong>${n}:ans tabell</strong>
+        <small>${n} × 1 till ${n} × 10</small>
+      `;
+      btn.addEventListener("click", () => openTable(n));
+      grid.appendChild(btn);
+    }
+  }
+
+  function updateHome() {
+    const p = getCurrentProfile();
+    if (!p) return;
+
+    const attempts = p.totalCorrect + p.totalWrong;
+    const accuracy = attempts ? Math.round((p.totalCorrect / attempts) * 100) : null;
+
+    $("homePlayerName").textContent = p.name;
+    $("homeBest").textContent = formatBest(p.bestTimeMs);
+    $("homeAccuracy").textContent = accuracy === null ? "–" : `${accuracy}%`;
+    $("homeCorrect").textContent = p.totalCorrect;
+    $("homeWrong").textContent = p.totalWrong;
+    $("homeGames").textContent = p.gamesPlayed;
+  }
+
+  function renderFullTable(table, highlightFactor = null) {
+    $("tableTitle").textContent = `${table}:ans tabell`;
+    const wrap = $("fullTable");
+    wrap.innerHTML = "";
+
+    for (let factor = 1; factor <= 10; factor++) {
+      const row = document.createElement("div");
+      row.className = "table-row" + (factor === highlightFactor ? " highlight" : "");
+      row.textContent = `${table} × ${factor} = ${table * factor}`;
+      wrap.appendChild(row);
+    }
+  }
+
+  function openTable(table) {
+    renderFullTable(table);
+    $("tableSub").textContent = "Repetera i lugn och ro.";
+    $("studyNote").hidden = true;
+    $("tableActions").style.display = "flex";
+    $("closeTableBtn").disabled = false;
+    showOverlay($("tableOverlay"));
+  }
+
+  // ---------- Profiles ----------
+  function renderProfiles() {
+    const list = $("profileList");
+    list.innerHTML = "";
+
+    if (!profiles.length) {
+      const msg = document.createElement("div");
+      msg.className = "study-note";
+      msg.textContent = "Ingen profil ännu. Skriv ett namn nedan för att börja.";
+      list.appendChild(msg);
+      return;
+    }
+
+    profiles.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "profile-btn";
+      const attempts = p.totalCorrect + p.totalWrong;
+      const accuracy = attempts ? Math.round(p.totalCorrect / attempts * 100) : null;
+      const detail = [
+        Number.isFinite(p.bestTimeMs) ? `PB ${formatBest(p.bestTimeMs)}` : "Inget PB ännu",
+        accuracy === null ? "inga svar ännu" : `${accuracy}% rätt`
+      ].join(" · ");
+
+      btn.innerHTML = `
+        <span class="profile-main">
+          <strong></strong>
+          <small></small>
+        </span>
+        <span class="arrow">›</span>
+      `;
+      btn.querySelector("strong").textContent = p.name;
+      btn.querySelector("small").textContent = detail;
+      btn.addEventListener("click", () => selectProfile(p.id));
+      list.appendChild(btn);
+    });
+  }
+
+  function openProfileChooser() {
+    renderProfiles();
+    $("nameInput").value = "";
+    $("nameError").textContent = "";
+    showOverlay($("profileOverlay"));
+    setTimeout(() => {
+      if (!profiles.length) $("nameInput").focus({preventScroll:true});
+    }, 100);
+  }
+
+  function selectProfile(id) {
+    currentProfileId = id;
+    saveCurrentProfile();
+    hideOverlay($("profileOverlay"));
+    updateHome();
+    showView("home");
+  }
+
+  $("nameForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("nameInput").value.trim().replace(/\s+/g, " ");
+
+    if (!name) {
+      $("nameError").textContent = "Skriv ett namn.";
+      return;
+    }
+
+    const existing = profiles.find(p => p.name.localeCompare(name, "sv", {sensitivity:"accent"}) === 0);
+    if (existing) {
+      $("nameError").textContent = "Namnet finns redan. Välj profilen ovan.";
+      return;
+    }
+
+    const profile = normalizeProfile({
+      id: makeId(),
+      name,
+      bestTimeMs: null,
+      totalCorrect: 0,
+      totalWrong: 0,
+      gamesPlayed: 0
+    });
+
+    profiles.push(profile);
+    saveProfiles();
+    selectProfile(profile.id);
+  });
+
+  // ---------- Question generation ----------
+  function buildQuestionPool() {
+    const pool = [];
+    for (let table = 2; table <= 9; table++) {
+      for (let factor = 1; factor <= 10; factor++) {
+        pool.push({
+          table,
+          factor,
+          result: table * factor,
+          duplicateKey: (factor >= 2 && factor <= 9)
+            ? [Math.min(table, factor), Math.max(table, factor)].join("x")
+            : `${table}x${factor}`
+        });
+      }
+    }
+    return shuffle(pool);
+  }
+
+  function makeGameQuestions() {
+    const chosen = [];
+    const usedKeys = new Set();
+
+    for (const q of buildQuestionPool()) {
+      if (usedKeys.has(q.duplicateKey)) continue;
+      usedKeys.add(q.duplicateKey);
+
+      // Sometimes reverse the visible order, but keep the "table" for correction.
+      const reverse = Math.random() < 0.4 && q.factor !== 1 && q.factor !== 10;
+      chosen.push({
+        ...q,
+        left: reverse ? q.factor : q.table,
+        right: reverse ? q.table : q.factor
+      });
+
+      if (chosen.length === REGULAR_GAME_LENGTH) break;
+    }
+
+    return chosen;
+  }
+
+  function plausibleWrongAnswers(q) {
+    const right = q.result;
+    const weighted = [];
+
+    const add = (value, weight = 1) => {
+      if (!Number.isFinite(value) || value <= 0 || value === right || value > 100) return;
+      for (let i = 0; i < weight; i++) weighted.push(value);
+    };
+
+    // Neighbouring multiples in the same table.
+    if (q.factor > 1) add(q.table * (q.factor - 1), 5);
+    if (q.factor < 10) add(q.table * (q.factor + 1), 5);
+
+    // Nearby result if the other factor is mistaken.
+    if (q.table > 2) add((q.table - 1) * q.factor, 4);
+    if (q.table < 9) add((q.table + 1) * q.factor, 4);
+
+    // Common "one factor off" mental slips.
+    add(right - q.table, 3);
+    add(right + q.table, 3);
+    add(right - q.factor, 2);
+    add(right + q.factor, 2);
+
+    // Other real multiplication-table products near the answer.
+    for (let a = 2; a <= 9; a++) {
+      for (let b = 1; b <= 10; b++) {
+        const v = a * b;
+        const d = Math.abs(v - right);
+        if (v !== right && d <= 12) add(v, d <= 5 ? 2 : 1);
+      }
+    }
+
+    const unique = [];
+    for (const v of shuffle(weighted)) {
+      if (!unique.includes(v)) unique.push(v);
+      if (unique.length === 3) break;
+    }
+
+    // Very defensive fallback.
+    for (let delta = 1; unique.length < 3; delta++) {
+      for (const v of [right - delta, right + delta]) {
+        if (v > 0 && v <= 100 && v !== right && !unique.includes(v)) unique.push(v);
+        if (unique.length === 3) break;
+      }
+    }
+
+    return unique;
+  }
+
+  function answerOptions(q) {
+    return shuffle([q.result, ...plausibleWrongAnswers(q)]);
+  }
+
+  // ---------- Deep dive ----------
+  function makeDeepDiveQuestions(table) {
+    const questions = [];
+    let previousFactor = null;
+
+    // Five complete passes through 1–10 = exactly 50 questions.
+    // Each pass is shuffled so every multiplication fact is trained equally.
+    for (let round = 0; round < 5; round++) {
+      let factors = shuffle([1,2,3,4,5,6,7,8,9,10]);
+
+      // Avoid an identical factor right across a round boundary when possible.
+      if (previousFactor !== null && factors[0] === previousFactor) {
+        const swapIndex = factors.findIndex((factor, index) => index > 0 && factor !== previousFactor);
+        if (swapIndex > 0) [factors[0], factors[swapIndex]] = [factors[swapIndex], factors[0]];
+      }
+
+      for (const factor of factors) {
+        const reverse = Math.random() < 0.45 && factor !== 1;
+        questions.push({
+          table,
+          factor,
+          result: table * factor,
+          left: reverse ? factor : table,
+          right: reverse ? table : factor
+        });
+        previousFactor = factor;
+      }
+    }
+
+    return questions;
+  }
+
+  function renderDeepDiveChoices() {
+    const p = getCurrentProfile();
+    if (!p) return;
+
+    const completed = new Set(p.deepDiveCompleted || []);
+    const grid = $("deepDiveGrid");
+    grid.innerHTML = "";
+
+    for (let table = 2; table <= 9; table++) {
+      const isCompleted = completed.has(table);
+      const btn = document.createElement("button");
+      btn.className = "deep-dive-choice" + (isCompleted ? " completed" : "");
+      btn.innerHTML = `
+        ${isCompleted ? '<span class="deep-dive-check" aria-hidden="true">✓</span>' : ""}
+        <span class="choice-number">${table}</span>
+        <strong>${table}:ans tabell</strong>
+        <small>${isCompleted ? "Avklarad · Djupdyk igen" : "50 frågor · alla rätt krävs"}</small>
+      `;
+      btn.addEventListener("click", () => startDeepDive(table));
+      grid.appendChild(btn);
+    }
+  }
+
+  function openDeepDiveChooser() {
+    if (!getCurrentProfile()) {
+      openProfileChooser();
+      return;
+    }
+    renderDeepDiveChoices();
+    showOverlay($("deepDiveOverlay"));
+  }
+
+  function startDeepDive(table) {
+    if (!getCurrentProfile()) {
+      openProfileChooser();
+      return;
+    }
+
+    if (correctionTimeout) {
+      clearTimeout(correctionTimeout);
+      correctionTimeout = null;
+    }
+
+    hideOverlay($("deepDiveOverlay"));
+    hideOverlay($("resultOverlay"));
+    hideOverlay($("tableOverlay"));
+    stopConfetti();
+
+    game = {
+      mode: "deepDive",
+      deepDiveTable: table,
+      questions: makeDeepDiveQuestions(table),
+      index: 0,
+      correct: 0,
+      wrong: 0,
+      startedAt: performance.now(),
+      locked: false,
+      finished: false
+    };
+
+    showView("game");
+    renderQuestion();
+    startTimerLoop();
+  }
+
+  // ---------- Game ----------
+  function startGame() {
+    if (!getCurrentProfile()) {
+      openProfileChooser();
+      return;
+    }
+
+    if (correctionTimeout) {
+      clearTimeout(correctionTimeout);
+      correctionTimeout = null;
+    }
+
+    hideOverlay($("resultOverlay"));
+    hideOverlay($("tableOverlay"));
+    stopConfetti();
+
+    game = {
+      mode: "regular",
+      questions: makeGameQuestions(),
+      index: 0,
+      correct: 0,
+      wrong: 0,
+      startedAt: performance.now(),
+      locked: false,
+      finished: false
+    };
+
+    showView("game");
+    renderQuestion();
+    startTimerLoop();
+  }
+
+  function startTimerLoop() {
+    cancelAnimationFrame(timerRAF);
+    const tick = () => {
+      if (!game || game.finished) return;
+      $("timer").textContent = formatTimer(performance.now() - game.startedAt);
+      timerRAF = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  function renderQuestion() {
+    const q = game.questions[game.index];
+    game.locked = false;
+
+    const total = game.questions.length;
+    $("questionCount").textContent = game.mode === "deepDive"
+      ? `Djupdyk ${game.deepDiveTable}:an · ${game.index + 1} av ${total}`
+      : `Fråga ${game.index + 1} av ${total}`;
+    $("progressBar").style.width = `${(game.index / total) * 100}%`;
+    $("questionText").textContent = `${q.left} × ${q.right}`;
+    $("questionCard").classList.remove("correct");
+
+    const wrap = $("answers");
+    wrap.innerHTML = "";
+
+    for (const option of answerOptions(q)) {
+      const btn = document.createElement("button");
+      btn.className = "answer-btn";
+      btn.textContent = option;
+      btn.addEventListener("click", () => handleAnswer(option, btn));
+      wrap.appendChild(btn);
+    }
+  }
+
+  function disableAnswers() {
+    document.querySelectorAll(".answer-btn").forEach(btn => btn.disabled = true);
+  }
+
+  function persistAttempt(isCorrect) {
+    const p = getCurrentProfile();
+    if (!p) return;
+    if (isCorrect) p.totalCorrect += 1;
+    else p.totalWrong += 1;
+    saveProfiles();
+  }
+
+  function handleAnswer(value, btn) {
+    if (!game || game.locked || game.finished) return;
+
+    game.locked = true;
+    disableAnswers();
+
+    const q = game.questions[game.index];
+    const isCorrect = value === q.result;
+
+    // Keep the original race statistics untouched by the separate deep-dive mode.
+    if (game.mode === "regular") persistAttempt(isCorrect);
+
+    if (isCorrect) {
+      game.correct++;
+      $("questionCard").classList.add("correct");
+      if (navigator.vibrate) navigator.vibrate(18);
+      setTimeout(nextQuestion, 230);
+      return;
+    }
+
+    game.wrong++;
+    btn.classList.add("wrong");
+    if (navigator.vibrate) navigator.vibrate([40, 35, 40]);
+
+    setTimeout(() => showCorrection(q), 140);
+  }
+
+  function showCorrection(q) {
+    renderFullTable(q.table, q.factor);
+    $("tableSub").textContent = `Inte riktigt – ${q.left} × ${q.right} = ${q.result}.`;
+    $("studyNote").hidden = false;
+    $("tableActions").style.display = "none";
+    showOverlay($("tableOverlay"));
+
+    correctionTimeout = setTimeout(() => {
+      hideOverlay($("tableOverlay"));
+      correctionTimeout = null;
+      nextQuestion();
+    }, WRONG_REVIEW_MS);
+  }
+
+  function nextQuestion() {
+    if (!game || game.finished) return;
+
+    game.index++;
+
+    if (game.index >= game.questions.length) {
+      finishGame();
+      return;
+    }
+
+    renderQuestion();
+  }
+
+  function finishGame() {
+    if (!game || game.finished) return;
+    game.finished = true;
+    cancelAnimationFrame(timerRAF);
+
+    const elapsedMs = performance.now() - game.startedAt;
+    $("timer").textContent = formatTimer(elapsedMs);
+    $("progressBar").style.width = "100%";
+
+    const p = getCurrentProfile();
+
+    if (game.mode === "deepDive") {
+      const total = game.questions.length;
+      const completed = game.correct === total && game.wrong === 0;
+
+      if (completed && !p.deepDiveCompleted.includes(game.deepDiveTable)) {
+        p.deepDiveCompleted.push(game.deepDiveTable);
+        p.deepDiveCompleted.sort((a,b) => a - b);
+        saveProfiles();
+      }
+
+      $("resultTitle").textContent = completed ? "Djupdyk avklarat!" : "Djupdyk klart";
+      $("resultTime").textContent = `${game.correct}/${total}`;
+      $("resultScore").textContent =
+        `${game.deepDiveTable}:ans tabell · ${formatBest(elapsedMs)}`;
+      $("resultCorrect").textContent = game.correct;
+      $("resultWrong").textContent = game.wrong;
+
+      const recordBanner = $("recordBanner");
+      recordBanner.classList.toggle("show", completed);
+      if (completed) {
+        recordBanner.textContent = `✓ ${game.deepDiveTable}:ANS TABELL ÄR AVKLARAD!`;
+      }
+
+      setTimeout(() => {
+        showOverlay($("resultOverlay"));
+        if (completed) launchConfetti();
+      }, 240);
+
+      return;
+    }
+
+    // Original 10-question race logic.
+    const previousBest = p.bestTimeMs;
+    const isRecord = !Number.isFinite(previousBest) || elapsedMs < previousBest;
+
+    p.gamesPlayed += 1;
+    if (isRecord) p.bestTimeMs = elapsedMs;
+    saveProfiles();
+
+    $("resultTitle").textContent = "Målgång";
+    $("resultTime").textContent = formatBest(elapsedMs);
+    $("resultScore").textContent = `${game.correct} av ${REGULAR_GAME_LENGTH} rätt`;
+    $("resultCorrect").textContent = game.correct;
+    $("resultWrong").textContent = game.wrong;
+
+    const recordBanner = $("recordBanner");
+    recordBanner.classList.toggle("show", isRecord);
+    if (isRecord) {
+      recordBanner.textContent = Number.isFinite(previousBest)
+        ? "🎉 NYTT PERSONBÄSTA!"
+        : "🎉 FÖRSTA REKORDET SATT!";
+    }
+
+    setTimeout(() => {
+      showOverlay($("resultOverlay"));
+      if (isRecord) launchConfetti();
+    }, 240);
+
+    updateHome();
+  }
+
+  function quitGame() {
+    if (!game) {
+      showView("home");
+      return;
+    }
+
+    const confirmed = confirm("Avsluta det här spelet? Tiden sparas inte.");
+    if (!confirmed) return;
+
+    if (correctionTimeout) clearTimeout(correctionTimeout);
+    correctionTimeout = null;
+    cancelAnimationFrame(timerRAF);
+    hideOverlay($("tableOverlay"));
+    game = null;
+    showView("home");
+    updateHome();
+  }
+
+  // ---------- Settings ----------
+  function openSettings() {
+    if (!getCurrentProfile()) return;
+    showOverlay($("settingsOverlay"));
+  }
+
+  function resetCurrentStats() {
+    const p = getCurrentProfile();
+    if (!p) return;
+
+    const ok = confirm(`Nollställa all statistik för ${p.name}?`);
+    if (!ok) return;
+
+    p.bestTimeMs = null;
+    p.totalCorrect = 0;
+    p.totalWrong = 0;
+    p.gamesPlayed = 0;
+    saveProfiles();
+    updateHome();
+    hideOverlay($("settingsOverlay"));
+  }
+
+  // ---------- Confetti ----------
+  let confettiFrame = null;
+  let confettiPieces = [];
+
+  function launchConfetti() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const canvas = $("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.display = "block";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const palette = ["#5b63e6","#ffcc56","#28b77b","#f06d76","#8b6fe8","#55b9e9"];
+    confettiPieces = Array.from({length:110}, () => ({
+      x: Math.random() * w,
+      y: -20 - Math.random() * h * .35,
+      vx: -1.6 + Math.random() * 3.2,
+      vy: 2.8 + Math.random() * 4.2,
+      rot: Math.random() * Math.PI,
+      vr: -.12 + Math.random() * .24,
+      size: 5 + Math.random() * 7,
+      color: palette[Math.floor(Math.random() * palette.length)]
+    }));
+
+    const start = performance.now();
+    function frame(now) {
+      ctx.clearRect(0,0,w,h);
+      const elapsed = now - start;
+
+      for (const p of confettiPieces) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += .02;
+        p.rot += p.vr;
+
+        ctx.save();
+        ctx.translate(p.x,p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size/2,-p.size/3,p.size,p.size*.66);
+        ctx.restore();
+      }
+
+      if (elapsed < 2300) {
+        confettiFrame = requestAnimationFrame(frame);
+      } else {
+        stopConfetti();
+      }
+    }
+
+    confettiFrame = requestAnimationFrame(frame);
+  }
+
+  function stopConfetti() {
+    if (confettiFrame) cancelAnimationFrame(confettiFrame);
+    confettiFrame = null;
+    $("confettiCanvas").style.display = "none";
+  }
+
+  // ---------- Events ----------
+  $("startGameBtn").addEventListener("click", startGame);
+  $("deepDiveBtn").addEventListener("click", openDeepDiveChooser);
+  $("closeDeepDiveBtn").addEventListener("click", () => hideOverlay($("deepDiveOverlay")));
+
+  $("playAgainBtn").addEventListener("click", () => {
+    if (game && game.mode === "deepDive") startDeepDive(game.deepDiveTable);
+    else startGame();
+  });
+
+  $("resultHomeBtn").addEventListener("click", () => {
+    hideOverlay($("resultOverlay"));
+    stopConfetti();
+    showView("home");
+    updateHome();
+  });
+
+  $("closeTableBtn").addEventListener("click", () => hideOverlay($("tableOverlay")));
+  $("quitGameBtn").addEventListener("click", quitGame);
+
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("closeSettingsBtn").addEventListener("click", () => hideOverlay($("settingsOverlay")));
+  $("switchPlayerBtn").addEventListener("click", () => {
+    hideOverlay($("settingsOverlay"));
+    openProfileChooser();
+  });
+  $("resetStatsBtn").addEventListener("click", resetCurrentStats);
+
+  // Close only non-critical overlays by tapping outside the sheet.
+  [$("tableOverlay"), $("settingsOverlay"), $("deepDiveOverlay")].forEach(overlay => {
+    overlay.addEventListener("click", (e) => {
+      if (e.target !== overlay) return;
+      if (overlay === $("tableOverlay") && game && !game.finished && $("tableActions").style.display === "none") return;
+      hideOverlay(overlay);
+    });
+  });
+
+  // ---------- Init ----------
+  buildTableCards();
+
+  // Spec: ask who is playing every time the app is opened.
+  // Existing profiles are presented first; a new name can always be added.
+  openProfileChooser();
+
+})();
+</script>
+</body>
+</html>
